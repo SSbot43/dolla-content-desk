@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='content-upgrades.css') }}">
   <style>
     .queue-open-form{margin:0}.queue-open-link{appearance:none;background:none;border:0;padding:0;margin:0;color:inherit;font:inherit;text-align:left;cursor:pointer}.queue-open-link strong{color:var(--text)}.queue-open-link:hover strong{text-decoration:underline;text-underline-offset:3px}.queue-open-link:hover .small-text{color:var(--gold2)}
+    .queue-head-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.queue-head-actions form{margin:0}
   </style>
 </head>
 <body>
@@ -25,11 +26,18 @@
 </header>
 
 <main class="page">
+  {% if request.args.get('pushed') is not none %}
+    <div class="banner ok"><strong>Queue pushed</strong><span>{{ request.args.get('pushed') }} approved queued article(s) are now saved to GitHub in one push.</span></div>
+  {% endif %}
+  {% if request.args.get('push_error') %}
+    <div class="banner bad"><strong>Push failed</strong><span>{{ request.args.get('push_error') }}</span></div>
+  {% endif %}
+
   <section class="hero-strip">
     <div>
       <div class="eyebrow">180-day SEO sprint</div>
-      <h2>Topic → Gemini → review → publish.</h2>
-      <p>Start from one topic, a batch of 3–5, a fresh trend, or a complete article of your own.</p>
+      <h2>Topic → Gemini → review → queue or publish.</h2>
+      <p>Approve articles locally as you go, then push the whole queue to GitHub once.</p>
     </div>
     <div class="system-pills">
       <span class="pill {{ 'ok' if gemini_ready else 'bad' }}">Gemini {{ 'ready' if gemini_ready else 'missing key' }}</span>
@@ -47,13 +55,13 @@
     <a class="workflow-card featured" href="/static/batch.html">
       <span class="workflow-num">2</span>
       <strong>Generate 3–5 topics</strong>
-      <p>Paste several topics once. Gemini writes them sequentially while you leave the page open, then you review each draft.</p>
+      <p>Paste several topics once. Gemini/OpenAI writes them sequentially, then you review and queue each approved draft.</p>
       <span class="workflow-link">Start batch →</span>
     </a>
     <a class="workflow-card" href="{{ url_for('ideas') }}">
       <span class="workflow-num">3</span>
       <strong>Pick a trending idea</strong>
-      <p>See fresh themes with source + date, then send one straight into the Gemini writing flow.</p>
+      <p>See fresh themes with source + date, then send one straight into the writing flow.</p>
       <span class="workflow-link">See trends →</span>
     </a>
     <a class="workflow-card" href="{{ url_for('feed', mode='paste') }}">
@@ -74,7 +82,14 @@
   <section class="panel">
     <div class="panel-title row-between">
       <span>Upcoming queue</span>
-      <a href="{{ url_for('feed') }}">Create another →</a>
+      <div class="queue-head-actions">
+        {% if queued %}
+        <form method="post" action="{{ url_for('push_queued_all') }}">
+          <button class="btn primary" type="submit">Push all queued ({{ queued }})</button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('feed') }}">Create another →</a>
+      </div>
     </div>
     <div class="table-wrap">
       <table>
