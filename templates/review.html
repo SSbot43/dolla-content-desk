@@ -1,35 +1,122 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Review — {{ brief.slug }}</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Review — {{ brief.slug }}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
 <body>
-<header><h1>Review: {{ brief.title or brief.slug }}</h1>
-  <a class="btn ghost" href="{{ url_for('feed') }}">← Edit</a></header>
+<header>
+  <div>
+    <div class="eyebrow">Dolla Content OS</div>
+    <h1>Review article</h1>
+  </div>
+  <a class="btn ghost" href="{{ url_for('feed') }}">+ New article</a>
+</header>
 
-{% if error %}<p class="banner bad">{{ error }}</p>{% endif %}
+<main class="page">
+  {% if error %}<div class="banner bad"><strong>Needs attention</strong><span>{{ error }}</span></div>{% endif %}
+  {% if notice %}<div class="banner ok"><strong>Success</strong><span>{{ notice }}</span></div>{% endif %}
 
-<p class="verdict {{ 'ok' if result.ok else 'bad' }}">
-  {{ 'PASSES the quality gate' if result.ok else 'BLOCKED — fix before queueing' }}</p>
+  <section class="review-head">
+    <div>
+      <div class="eyebrow">{{ brief.target_market }} · {{ brief.primary_keyword or 'manual article' }}</div>
+      <h2>{{ brief.title or brief.slug }}</h2>
+      <div class="muted">/guides/{{ brief.slug }}</div>
+    </div>
+    <div class="verdict {{ 'ok' if result.ok else 'bad' }}">
+      <span class="dot"></span>
+      {{ 'PASS — ready to queue or publish' if result.ok else 'BLOCKED — fix the red issues' }}
+    </div>
+  </section>
 
-{% if result.autofixes %}
-<ul class="fixes">{% for f in result.autofixes %}<li>auto-fix: {{ f }}</li>{% endfor %}</ul>
-{% endif %}
+  <div class="review-grid">
+    <section class="panel">
+      <div class="panel-title">Edit before publishing</div>
+      <form method="post" action="{{ url_for('review') }}" enctype="multipart/form-data" class="editor-card compact" id="article-form">
+        <input type="hidden" name="mode" value="paste">
+        <div class="grid two">
+          <label>Primary keyword<input name="keyword" value="{{ brief.primary_keyword }}"></label>
+          <label>Slug<input name="slug" id="slug" value="{{ brief.slug }}"></label>
+        </div>
+        <label>Title<input name="title" value="{{ brief.title }}" required></label>
+        <label>Meta description<textarea name="meta" rows="3">{{ brief.meta_description }}</textarea></label>
+        <label>H1<input name="h1" value="{{ brief.h1 }}"></label>
+        <div class="grid three">
+          <label>Market
+            <select name="market">
+              {% for m in ['US','UK','CA','AU'] %}<option {{ 'selected' if brief.target_market == m else '' }}>{{ m }}</option>{% endfor %}
+            </select>
+          </label>
+          <label>Game slug<input name="game" value="{{ brief.game }}"></label>
+          <label>Publish date<input type="date" name="publish_date" value="{{ brief.publish_date }}"></label>
+        </div>
+        <div class="grid two">
+          <label>Angle<input name="angle" value="{{ brief.angle }}"></label>
+          <label>Intent<input name="intent" value="{{ brief.intent }}"></label>
+        </div>
+        <label>Why Dolla fits<input name="why" value="{{ brief.why_dolla }}"></label>
 
-{% if result.issues %}
-<table class="issues">
-  <tr><th>Severity</th><th>Rule</th><th>Detail</th></tr>
-  {% for i in result.issues %}
-  <tr class="{{ i.severity }}"><td>{{ i.severity }}</td><td>{{ i.rule }}</td><td>{{ i.detail }}</td></tr>
-  {% endfor %}
-</table>
-{% endif %}
+        <div class="paste-image small" id="paste-image" tabindex="0">
+          <strong>Paste or drop a replacement image</strong>
+          <span>Ctrl+V / Cmd+V works anywhere on this page.</span>
+          <div class="upload-status" id="upload-status">{{ brief.image or 'No image attached.' }}</div>
+        </div>
+        <div class="grid two">
+          <label>Image file<input type="file" name="image_file" id="image-file" accept="image/*"></label>
+          <label>Image URL<input name="image" id="image-url" value="{{ brief.image }}"></label>
+        </div>
+        <label>Image alt text<input name="alt" value="{{ brief.alt }}"></label>
 
-<h2>Preview</h2>
-<iframe class="preview" srcdoc="{{ preview|e }}"></iframe>
+        <label>Article body / Markdown
+          <textarea name="body" id="body" rows="26">{{ brief.body_md }}</textarea>
+        </label>
+        <button class="btn secondary" type="submit">Re-run Quality Gate</button>
+      </form>
+    </section>
 
-<form method="post" action="{{ url_for('enqueue') }}">
-  <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
-  <button class="btn" type="submit" {{ '' if result.ok else 'disabled' }}>
-    {{ 'Queue it' if result.ok else 'Blocked' }}</button>
-</form>
-</body></html>
+    <aside class="panel gate-panel">
+      <div class="panel-title">Quality gate</div>
+      {% if result.autofixes %}
+        <div class="mini-heading">Auto-fixes applied</div>
+        {% for f in result.autofixes %}<div class="issue autofix">✓ {{ f }}</div>{% endfor %}
+      {% endif %}
+
+      {% if result.issues %}
+        {% for i in result.issues %}
+          <div class="issue {{ i.severity }}">
+            <strong>{{ i.rule }}</strong>
+            <span>{{ i.detail }}</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-good">No quality or claims issues found.</div>
+      {% endif %}
+
+      <div class="publish-box">
+        <div>
+          <strong>Ready?</strong>
+          <p>Queue keeps the ramp schedule. Publish & Push runs the existing publisher, commits the content files, and pushes to GitHub for Cloudflare.</p>
+        </div>
+        <form method="post" action="{{ url_for('enqueue') }}">
+          <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
+          <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Queue for schedule</button>
+        </form>
+        <form method="post" action="{{ url_for('publish_push') }}" onsubmit="return confirm('Publish this article through the existing ramp and push the content repo to GitHub?');">
+          <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
+          <button class="btn primary full" type="submit" {{ '' if result.ok else 'disabled' }}>Publish & Push</button>
+        </form>
+      </div>
+    </aside>
+  </div>
+
+  <section class="panel preview-panel">
+    <div class="panel-title">Rendered page preview</div>
+    <iframe class="preview" srcdoc="{{ preview|e }}"></iframe>
+  </section>
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
