@@ -5,6 +5,7 @@
   <title>Dolla Content Desk</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='content-upgrades.css') }}">
 </head>
 <body>
 <header>
@@ -14,6 +15,7 @@
   </div>
   <div class="header-actions">
     <a class="btn ghost" href="{{ site_base }}" target="_blank" rel="noopener">View site ↗</a>
+    <a class="btn secondary" href="{{ url_for('ideas') }}">Trending ideas</a>
     <a class="btn primary" href="{{ url_for('feed') }}">+ Create article</a>
   </div>
 </header>
@@ -22,13 +24,34 @@
   <section class="hero-strip">
     <div>
       <div class="eyebrow">180-day SEO sprint</div>
-      <h2>Write, gate, schedule, publish.</h2>
-      <p>The proven content engine stays underneath. This desk is just the fast control layer.</p>
+      <h2>Headline → Gemini → review → publish.</h2>
+      <p>The content engine stays underneath. You can start from your own headline, a fresh trend, or a complete article.</p>
     </div>
     <div class="system-pills">
       <span class="pill {{ 'ok' if gemini_ready else 'bad' }}">Gemini {{ 'ready' if gemini_ready else 'missing key' }}</span>
       <span class="pill {{ 'ok' if content_repo_ok else 'bad' }}">Content repo {{ 'connected' if content_repo_ok else 'missing' }}</span>
     </div>
+  </section>
+
+  <section class="workflow-grid">
+    <a class="workflow-card" href="{{ url_for('feed') }}">
+      <span class="workflow-num">1</span>
+      <strong>Give Gemini a headline</strong>
+      <p>You choose the subject, Dolla game/site link and image. Gemini fills the SEO brief and writes.</p>
+      <span class="workflow-link">Create article →</span>
+    </a>
+    <a class="workflow-card featured" href="{{ url_for('ideas') }}">
+      <span class="workflow-num">2</span>
+      <strong>Pick a trending idea</strong>
+      <p>See fresh themes with source + date, then send one straight into the Gemini writing flow.</p>
+      <span class="workflow-link">See trends →</span>
+    </a>
+    <a class="workflow-card" href="{{ url_for('feed', mode='paste') }}">
+      <span class="workflow-num">3</span>
+      <strong>Paste my own article</strong>
+      <p>Paste your writing and image. It still passes the same SEO, claims and duplicate checks.</p>
+      <span class="workflow-link">Paste article →</span>
+    </a>
   </section>
 
   <section class="stats">
@@ -55,7 +78,7 @@
           <td><span class="status-chip">{{ b.status }}</span></td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="empty-cell">Nothing waiting. Create a Gemini article or paste one of your own.</td></tr>
+        <tr><td colspan="5" class="empty-cell">Nothing waiting. Start from a headline, trend idea, or your own article.</td></tr>
         {% endfor %}
       </table>
     </div>
