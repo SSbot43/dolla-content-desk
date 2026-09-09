@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>New article — Dolla Content Desk</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header><h1>New article</h1><a class="btn ghost" href="{{ url_for('dashboard') }}">← Dashboard</a></header>
+
+<form method="post" action="{{ url_for('feed') }}" class="card-form">
+  <div class="mode">
+    <label><input type="radio" name="mode" value="generate" checked> Generate with Gemini (from keyword)</label>
+    <label><input type="radio" name="mode" value="paste"> I'll paste the body</label>
+  </div>
+
+  <label>Primary keyword *<input name="keyword" required placeholder="crypto casino withdrawal"></label>
+  <label>Slug *<input name="slug" required placeholder="crypto-withdrawals"></label>
+  <label>Title *<input name="title" required></label>
+  <label>Meta description<input name="meta" placeholder="110–155 chars (auto-trimmed if long)"></label>
+  <label>H1 (defaults to Title)<input name="h1"></label>
+
+  <div class="row">
+    <label>Angle<input name="angle" placeholder="practical first-party guide"></label>
+    <label>Game slug (optional)<input name="game" placeholder="plinko"></label>
+  </div>
+  <div class="row">
+    <label>Market
+      <select name="market"><option>US</option><option>UK</option><option>CA</option><option>AU</option></select></label>
+    <label>Intent<input name="intent" placeholder="informational"></label>
+  </div>
+  <label>Why Dolla fits<input name="why" placeholder="no-KYC standard flow, free demo on every game"></label>
+  <div class="row">
+    <label>Image URL<input name="image" placeholder="https://dollacasino.com/static/img/guides/…png"></label>
+    <label>Image alt text<input name="alt" placeholder="describe the image (required)"></label>
+  </div>
+
+  <label>Body (Markdown) — required only for “paste” mode
+    <textarea name="body" rows="10" placeholder="Leave blank when generating with Gemini."></textarea></label>
+
+  <button class="btn" type="submit">Generate / Validate →</button>
+</form>
+</body></html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Review — {{ brief.slug }}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header><h1>Review: {{ brief.title or brief.slug }}</h1>
+  <a class="btn ghost" href="{{ url_for('feed') }}">← Edit</a></header>
+
+{% if error %}<p class="banner bad">{{ error }}</p>{% endif %}
+
+<p class="verdict {{ 'ok' if result.ok else 'bad' }}">
+  {{ 'PASSES the quality gate' if result.ok else 'BLOCKED — fix before queueing' }}</p>
+
+{% if result.autofixes %}
+<ul class="fixes">{% for f in result.autofixes %}<li>auto-fix: {{ f }}</li>{% endfor %}</ul>
+{% endif %}
+
+{% if result.issues %}
+<table class="issues">
+  <tr><th>Severity</th><th>Rule</th><th>Detail</th></tr>
+  {% for i in result.issues %}
+  <tr class="{{ i.severity }}"><td>{{ i.severity }}</td><td>{{ i.rule }}</td><td>{{ i.detail }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h2>Preview</h2>
+<iframe class="preview" srcdoc="{{ preview|e }}"></iframe>
+
+<form method="post" action="{{ url_for('enqueue') }}">
+  <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
+  <button class="btn" type="submit" {{ '' if result.ok else 'disabled' }}>
+    {{ 'Queue it' if result.ok else 'Blocked' }}</button>
+</form>
+</body></html>
