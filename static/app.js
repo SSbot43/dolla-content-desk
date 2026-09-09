@@ -1,8 +1,11 @@
 (() => {
+  const form = document.getElementById('article-form');
   const pasteBox = document.getElementById('paste-image');
   const fileInput = document.getElementById('image-file');
   const imageUrl = document.getElementById('image-url');
   const slugInput = document.getElementById('slug');
+  const titleInput = document.getElementById('title');
+  const trendContext = document.getElementById('trend-context');
   const status = document.getElementById('upload-status');
   const submitLabel = document.getElementById('submit-label');
   const flowNote = document.getElementById('flow-note');
@@ -26,6 +29,43 @@
     }
   }
 
+  function cleanTopicText(value) {
+    return (value || '')
+      .replace(/^\*\*|\*\*$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function splitTopicAndExplanation() {
+    if (currentMode() !== 'generate' || !titleInput) return;
+
+    const raw = cleanTopicText(titleInput.value);
+    if (!raw) return;
+
+    const colon = raw.indexOf(':');
+    if (colon < 0) return;
+
+    const left = cleanTopicText(raw.slice(0, colon));
+    const right = cleanTopicText(raw.slice(colon + 1));
+    const leftWords = left.split(/\s+/).filter(Boolean).length;
+
+    // Only auto-split when the user has clearly pasted a topic + explanatory sentence,
+    // not a normal short SEO title containing a colon.
+    const looksLikeTopicBrief =
+      right.length >= 55 &&
+      left.length >= 8 &&
+      left.length <= 90 &&
+      leftWords <= 14;
+
+    if (!looksLikeTopicBrief) return;
+
+    titleInput.value = left.replace(/[.:;,-]+$/, '').trim();
+    if (trendContext) {
+      const existing = trendContext.value.trim();
+      trendContext.value = existing ? `${existing}\n${right}` : right;
+    }
+  }
+
   async function uploadPastedFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
     status.textContent = 'Uploading pasted image…';
@@ -35,7 +75,7 @@
     const ext = (file.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
     const safeName = file.name && file.name !== 'image.png' ? file.name : `pasted-image.${ext}`;
     data.append('image', file, safeName);
-    data.append('slug', slugInput?.value || document.getElementById('title')?.value || 'guide');
+    data.append('slug', slugInput?.value || titleInput?.value || 'guide');
 
     try {
       const res = await fetch('/upload-image', { method: 'POST', body: data });
@@ -85,6 +125,10 @@
   fileInput?.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (file) status.textContent = `Selected: ${file.name} — it will upload when you review.`;
+  });
+
+  form?.addEventListener('submit', () => {
+    splitTopicAndExplanation();
   });
 
   modeInputs.forEach(input => input.addEventListener('change', updateMode));
