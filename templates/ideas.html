@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Trending ideas — Dolla Content Desk</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='content-upgrades.css') }}">
+</head>
+<body>
+<header>
+  <div>
+    <div class="eyebrow">Dolla Content OS</div>
+    <h1>Trending ideas</h1>
+  </div>
+  <div class="header-actions">
+    <a class="btn ghost" href="{{ url_for('dashboard') }}">← Dashboard</a>
+    <a class="btn secondary" href="{{ url_for('ideas', refresh=1) }}">Refresh trends</a>
+    <a class="btn primary" href="{{ url_for('feed') }}">+ Your own headline</a>
+  </div>
+</header>
+
+<main class="page">
+  <section class="hero-strip trend-hero">
+    <div>
+      <div class="eyebrow">Fresh story radar</div>
+      <h2>Pick an idea. Gemini writes it.</h2>
+      <p>Recent public coverage is used only to spot themes. The article itself still goes through Dolla's claims and quality gate.</p>
+    </div>
+  </section>
+
+  {% if error %}
+  <div class="banner bad trend-error">
+    <strong>Trend feed unavailable</strong>
+    <span>{{ error }}. You can still use “Your own headline”.</span>
+  </div>
+  {% endif %}
+
+  {% for category, ideas in grouped %}
+  <section class="panel trend-section">
+    <div class="panel-title row-between">
+      <span>{{ category }}</span>
+      <span class="muted">{{ ideas|length }} ideas</span>
+    </div>
+
+    {% if ideas %}
+    <div class="trend-list">
+      {% for idea in ideas %}
+      <article class="trend-item">
+        <div class="trend-main">
+          <div class="trend-kicker">{{ idea.source }} · {{ idea.published }}</div>
+          <h3>{{ idea.headline }}</h3>
+          <p class="trend-source-title">Why it surfaced: {{ idea.source_title }}</p>
+          <div class="trend-meta">
+            <span>Best Dolla fit: <strong>{{ (destinations | selectattr('slug', 'equalto', idea.game) | map(attribute='label') | list | first) or 'Dolla homepage / general' }}</strong></span>
+            <a href="{{ idea.source_url }}" target="_blank" rel="noopener">View source ↗</a>
+          </div>
+        </div>
+        <div class="trend-action">
+          <a class="btn primary"
+             href="{{ url_for('feed',
+                              mode='generate',
+                              title=idea.headline,
+                              game=idea.game,
+                              market='US',
+                              trend_context=idea.source_title ~ ' — ' ~ idea.source) }}">
+            Write this article →
+          </a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-cell">No useful fresh ideas in this category right now.</div>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  <section class="panel custom-headline">
+    <div class="panel-title">Already know what you want?</div>
+    <div class="custom-headline-body">
+      <div>
+        <strong>Skip the trend feed and give Gemini your own headline.</strong>
+        <p class="muted">Choose the Dolla game/site destination, add an image, then review before publishing.</p>
+      </div>
+      <a class="btn primary" href="{{ url_for('feed') }}">Start from a headline →</a>
+    </div>
+  </section>
+</main>
+</body>
+</html>
