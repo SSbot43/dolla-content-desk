@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/content-upgrades.css">
   <style>
-    .batch-wrap{max-width:1080px;margin:0 auto;padding:28px 24px 60px}.batch-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.batch-card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:20px;box-shadow:var(--shadow)}.batch-card h2{margin:0 0 6px}.batch-card p{color:var(--muted);margin:0 0 16px}.topic-box{min-height:230px}.batch-actions{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}.progress-list{display:flex;flex-direction:column;gap:10px}.progress-item{border:1px solid var(--line);border-radius:11px;padding:12px 13px;background:#0e141b}.progress-item strong{display:block;margin-bottom:3px}.progress-row{display:flex;justify-content:space-between;gap:12px;align-items:center}.state{font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:850;color:var(--muted)}.state.running{color:var(--gold2)}.state.done{color:var(--ok)}.state.error{color:var(--bad)}.draft-list{display:flex;flex-direction:column;gap:10px}.draft-card{border:1px solid var(--line);border-radius:11px;padding:13px;background:#0e141b}.draft-card p{margin:3px 0 10px;font-size:12px}.draft-actions{display:flex;gap:8px;flex-wrap:wrap}.note-box{padding:12px;border:1px solid rgba(232,184,75,.25);border-radius:10px;background:rgba(232,184,75,.06);font-size:12px;color:#d8c99d;margin-bottom:14px}.small-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;margin:15px 0 6px}.counter{font-size:12px;color:var(--muted)}
+    .batch-wrap{max-width:1080px;margin:0 auto;padding:28px 24px 60px}.batch-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.batch-card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:20px;box-shadow:var(--shadow)}.batch-card h2{margin:0 0 6px}.batch-card p{color:var(--muted);margin:0 0 16px}.topic-box{min-height:230px}.batch-actions{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}.progress-list{display:flex;flex-direction:column;gap:10px}.progress-item{border:1px solid var(--line);border-radius:11px;padding:12px 13px;background:#0e141b}.progress-item strong{display:block;margin-bottom:3px}.progress-row{display:flex;justify-content:space-between;gap:12px;align-items:center}.state{font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:850;color:var(--muted)}.state.running{color:var(--gold2)}.state.done{color:var(--ok)}.state.error{color:var(--bad)}.state.paused{color:#d8a64b}.draft-list{display:flex;flex-direction:column;gap:10px}.draft-card{border:1px solid var(--line);border-radius:11px;padding:13px;background:#0e141b}.draft-card p{margin:3px 0 10px;font-size:12px}.draft-actions{display:flex;gap:8px;flex-wrap:wrap}.note-box{padding:12px;border:1px solid rgba(232,184,75,.25);border-radius:10px;background:rgba(232,184,75,.06);font-size:12px;color:#d8c99d;margin-bottom:14px}.small-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;margin:15px 0 6px}.counter{font-size:12px;color:var(--muted)}
     .topic-links{display:flex;flex-direction:column;gap:8px;margin-top:10px}.topic-link-row{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:10px;align-items:center;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#0e141b}.topic-link-title{font-size:12px;font-weight:750;color:#dce5ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.topic-link-row select{margin:0}.topic-link-help{font-size:11px;color:var(--muted);margin-top:7px}
     @media(max-width:850px){.batch-grid{grid-template-columns:1fr}.batch-wrap{padding:20px 14px 45px}.topic-link-row{grid-template-columns:1fr}.topic-link-title{white-space:normal}}
   </style>
@@ -21,7 +21,7 @@
 <main class="batch-wrap">
   <section class="hero-strip" style="margin-bottom:16px">
     <div><div class="eyebrow">3–5 articles at a time</div><h2>Paste the topics. Gemini works through them one by one.</h2><p>You can leave this page open while it generates. Review and publish each finished draft afterwards.</p></div>
-    <div class="system-pills"><span class="pill ok">Sequential generation</span><span class="pill">No auto-publish</span></div>
+    <div class="system-pills"><span class="pill ok">Sequential generation</span><span class="pill">Quota-aware</span><span class="pill">No auto-publish</span></div>
   </section>
 
   <div class="batch-grid">
@@ -52,7 +52,7 @@
       <div class="topic-link-help">Optional: choose a different Dolla page for each topic. This controls the CTA/link in that article.</div>
       <div class="topic-links" id="topic-links"><div class="muted">Add topics above and their link selectors will appear here.</div></div>
 
-      <div class="note-box" style="margin-top:14px"><strong>Images come at review time.</strong> Batch mode temporarily satisfies the image check so Gemini can write without wasting repair calls. The saved review has that placeholder removed and Publish stays disabled until you add a real image and re-run the quality gate.</div>
+      <div class="note-box" style="margin-top:14px"><strong>Batch mode now uses fewer Gemini calls.</strong> SEO brief fields are prepared locally, so Gemini spends its quota on the article itself instead of making an extra API call for every topic. Images still come at review time.</div>
 
       <div class="batch-actions">
         <button class="btn primary" id="generate">Generate 1 by 1 →</button>
@@ -110,6 +110,19 @@
     return html;
   }
   function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function keywordFromTitle(title){
+    const stop=new Set(['the','a','an','and','or','of','to','for','in','on','with','why','how','what','is','are','this','that']);
+    const words=(title.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(w=>!stop.has(w));
+    return words.slice(0,6).join(' ') || title.toLowerCase().slice(0,60);
+  }
+  function localMeta(title, game){
+    const label=destinationLabel(game);
+    let text=`${title}: a sharp Dolla take on why this casino story matters, what makes it interesting, and where ${label} fits the action.`;
+    if(text.length<110) text+=' Includes free-play demo context and practical player details.';
+    return text.slice(0,150).replace(/[ ,;:-]+$/,'');
+  }
+  function localAngle(title, game){return `High-energy casino editorial on ${title}, tied naturally to ${destinationLabel(game)} without inventing claims.`}
+  function localWhy(game){return game?`Dolla offers a related ${destinationLabel(game)} experience with free-play demo access.`:'Dolla offers free-play demos, crypto play and a standard no-KYC flow.'}
 
   function renderTopicLinks(){
     const raw=lines().slice(0,5);
@@ -155,6 +168,9 @@
   }
   function openDraft(id){const d=getDrafts().find(x=>x.id===id);if(!d)return;const w=window.open('','_blank');if(!w)return alert('Your browser blocked the review tab. Allow pop-ups for 127.0.0.1 and try again.');const html=prepReviewHtml(d.html);w.document.open();w.document.write(html);w.document.close()}
   function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+  function quotaExhausted(msg){return /exceeded your current quota|check your plan and billing|quota_exceeded|requests per day|daily quota/i.test(msg||'')}
+  function transient429(msg){return /429|resource_exhausted|rate limit/i.test(msg||'') && !quotaExhausted(msg)}
+  function overloaded503(msg){return /503|unavailable|high demand|overload/i.test(msg||'')}
 
   topicsEl.addEventListener('input',()=>{const n=lines().length;countEl.textContent=`${n} topic${n===1?'':'s'}${n>5?' — only first 5 will run':''}`;renderTopicLinks()});
   topicLinksEl.addEventListener('change',e=>{const sel=e.target.closest('.topic-link-select');if(!sel)return;const raw=decodeURIComponent(sel.dataset.raw||'');topicOverrides[raw]=sel.value});
@@ -174,27 +190,44 @@
       return {raw:r,...p,game,id:'p'+Date.now()+i,state:'waiting'};
     });
     function paint(){progress.innerHTML=rows.map((r,i)=>`<div class="progress-item"><div class="progress-row"><strong>${i+1}. ${escapeHtml(r.title)}</strong><span class="state ${r.state}">${r.state}</span></div><div class="muted small-text">Link: ${escapeHtml(destinationLabel(r.game))}</div>${r.message?`<div class="muted small-text">${escapeHtml(r.message)}</div>`:''}</div>`).join('')}
-    paint();let completed=0;
-    for(let i=0;i<rows.length;i++){
-      if(stopRequested)break;const r=rows[i];r.state='running';r.message='Gemini is writing…';paint();overall.textContent=`Generating ${i+1} of ${rows.length}`;
+    function makeForm(r){
       const fd=new FormData();fd.append('mode','generate');fd.append('title',r.title);fd.append('market',market);fd.append('game',r.game);fd.append('trend_context',r.context||r.raw);
-      fd.append('image','https://dollacasino.com/img/guides/__batch-pending-image__.png');fd.append('alt','Temporary batch image placeholder — replace before publishing');fd.append('intent','informational');
+      fd.append('keyword',keywordFromTitle(r.title));fd.append('meta',localMeta(r.title,r.game));fd.append('angle',localAngle(r.title,r.game));fd.append('why',localWhy(r.game));
+      fd.append('image','https://dollacasino.com/img/guides/__batch-pending-image__.png');fd.append('alt','Temporary batch image placeholder — replace before publishing');fd.append('intent','informational');return fd;
+    }
+    async function requestArticle(r){
+      const res=await fetch('/feed',{method:'POST',body:makeForm(r)});const html=await res.text();if(!res.ok)throw new Error(`Server returned ${res.status}`);
+      const doc=new DOMParser().parseFromString(html,'text/html');const title=doc.querySelector('.review-head h2')?.textContent?.trim()||r.title;
+      const banner=doc.querySelector('.banner.bad');const bannerText=(banner?.textContent||'').replace(/\s+/g,' ').trim();const bodyText=(doc.querySelector('#body')?.value||'').trim();
+      if(/Gemini unavailable|Could not prepare the Gemini brief/i.test(bannerText) || !bodyText) throw new Error(bannerText || 'Gemini did not return an article body');
+      return {html,title};
+    }
+
+    paint();let completed=0, hardStop='';
+    for(let i=0;i<rows.length;i++){
+      if(stopRequested||hardStop)break;const r=rows[i];r.state='running';r.message='Gemini is writing…';paint();overall.textContent=`Generating ${i+1} of ${rows.length}`;
       try{
-        const res=await fetch('/feed',{method:'POST',body:fd});const html=await res.text();if(!res.ok)throw new Error(`Server returned ${res.status}`);
-        const doc=new DOMParser().parseFromString(html,'text/html');const title=doc.querySelector('.review-head h2')?.textContent?.trim()||r.title;
-        const banner=doc.querySelector('.banner.bad');
-        const bannerText=(banner?.textContent||'').replace(/\s+/g,' ').trim();
-        const bodyText=(doc.querySelector('#body')?.value||'').trim();
-        if(/Gemini unavailable|Could not prepare the Gemini brief/i.test(bannerText) || !bodyText){
-          throw new Error(bannerText || 'Gemini did not return an article body');
+        let result;
+        try{result=await requestArticle(r)}catch(firstErr){
+          const msg=firstErr.message||String(firstErr);
+          if(quotaExhausted(msg)){throw firstErr}
+          if(overloaded503(msg)){r.message='Gemini is busy — waiting 30 seconds and retrying this article once…';paint();overall.textContent='Gemini high demand — retrying shortly…';await sleep(30000);result=await requestArticle(r)}
+          else if(transient429(msg)){r.message='Rate limit hit — waiting 60 seconds and retrying this article once…';paint();overall.textContent='Gemini rate limit — cooling down…';await sleep(60000);result=await requestArticle(r)}
+          else throw firstErr;
         }
         r.state='done';r.message='Draft generated — ready for proofreading.';
-        addDraft({id:'d'+Date.now()+i,title,game:r.game,gameLabel:destinationLabel(r.game),at:Date.now(),html});completed++;
-      }catch(err){r.state='error';r.message=(err.message||String(err)).slice(0,220)}
+        addDraft({id:'d'+Date.now()+i,title:result.title,game:r.game,gameLabel:destinationLabel(r.game),at:Date.now(),html:result.html});completed++;
+      }catch(err){
+        const msg=(err.message||String(err));r.state='error';r.message=msg.slice(0,220);
+        if(quotaExhausted(msg)){
+          hardStop='Gemini project quota is exhausted. Batch stopped so the remaining topics are not wasted.';
+          for(let j=i+1;j<rows.length;j++){rows[j].state='paused';rows[j].message='Not attempted — waiting for Gemini quota to reset.'}
+        }
+      }
       paint();
-      if(i<rows.length-1 && !stopRequested){overall.textContent=`Cooling down before article ${i+2}…`;await sleep(5000)}
+      if(i<rows.length-1 && !stopRequested && !hardStop){overall.textContent=`Cooling down before article ${i+2}…`;await sleep(8000)}
     }
-    overall.textContent=stopRequested?`Stopped. ${completed} draft${completed===1?'':'s'} ready.`:`Finished. ${completed} of ${rows.length} drafts ready.`;
+    overall.textContent=hardStop?`${hardStop} ${completed} draft${completed===1?'':'s'} ready.`:(stopRequested?`Stopped. ${completed} draft${completed===1?'':'s'} ready.`:`Finished. ${completed} of ${rows.length} drafts ready.`);
     running=false;generateBtn.disabled=false;stopBtn.disabled=true;stopBtn.textContent='Stop after current article';
   });
   renderDrafts();topicsEl.dispatchEvent(new Event('input'));
