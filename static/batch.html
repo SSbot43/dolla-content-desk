@@ -7,7 +7,9 @@
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/content-upgrades.css">
   <style>
-    .batch-wrap{max-width:1040px;margin:0 auto;padding:28px 24px 60px}.batch-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.batch-card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:20px;box-shadow:var(--shadow)}.batch-card h2{margin:0 0 6px}.batch-card p{color:var(--muted);margin:0 0 16px}.topic-box{min-height:230px}.batch-actions{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}.progress-list{display:flex;flex-direction:column;gap:10px}.progress-item{border:1px solid var(--line);border-radius:11px;padding:12px 13px;background:#0e141b}.progress-item strong{display:block;margin-bottom:3px}.progress-row{display:flex;justify-content:space-between;gap:12px;align-items:center}.state{font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:850;color:var(--muted)}.state.running{color:var(--gold2)}.state.done{color:var(--ok)}.state.error{color:var(--bad)}.draft-list{display:flex;flex-direction:column;gap:10px}.draft-card{border:1px solid var(--line);border-radius:11px;padding:13px;background:#0e141b}.draft-card p{margin:3px 0 10px;font-size:12px}.draft-actions{display:flex;gap:8px;flex-wrap:wrap}.note-box{padding:12px;border:1px solid rgba(232,184,75,.25);border-radius:10px;background:rgba(232,184,75,.06);font-size:12px;color:#d8c99d;margin-bottom:14px}.small-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;margin:15px 0 6px}.counter{font-size:12px;color:var(--muted)}@media(max-width:850px){.batch-grid{grid-template-columns:1fr}.batch-wrap{padding:20px 14px 45px}}
+    .batch-wrap{max-width:1080px;margin:0 auto;padding:28px 24px 60px}.batch-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.batch-card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:20px;box-shadow:var(--shadow)}.batch-card h2{margin:0 0 6px}.batch-card p{color:var(--muted);margin:0 0 16px}.topic-box{min-height:230px}.batch-actions{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}.progress-list{display:flex;flex-direction:column;gap:10px}.progress-item{border:1px solid var(--line);border-radius:11px;padding:12px 13px;background:#0e141b}.progress-item strong{display:block;margin-bottom:3px}.progress-row{display:flex;justify-content:space-between;gap:12px;align-items:center}.state{font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:850;color:var(--muted)}.state.running{color:var(--gold2)}.state.done{color:var(--ok)}.state.error{color:var(--bad)}.draft-list{display:flex;flex-direction:column;gap:10px}.draft-card{border:1px solid var(--line);border-radius:11px;padding:13px;background:#0e141b}.draft-card p{margin:3px 0 10px;font-size:12px}.draft-actions{display:flex;gap:8px;flex-wrap:wrap}.note-box{padding:12px;border:1px solid rgba(232,184,75,.25);border-radius:10px;background:rgba(232,184,75,.06);font-size:12px;color:#d8c99d;margin-bottom:14px}.small-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;margin:15px 0 6px}.counter{font-size:12px;color:var(--muted)}
+    .topic-links{display:flex;flex-direction:column;gap:8px;margin-top:10px}.topic-link-row{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:10px;align-items:center;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#0e141b}.topic-link-title{font-size:12px;font-weight:750;color:#dce5ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.topic-link-row select{margin:0}.topic-link-help{font-size:11px;color:var(--muted);margin-top:7px}
+    @media(max-width:850px){.batch-grid{grid-template-columns:1fr}.batch-wrap{padding:20px 14px 45px}.topic-link-row{grid-template-columns:1fr}.topic-link-title{white-space:normal}}
   </style>
 </head>
 <body>
@@ -26,25 +28,29 @@
     <section class="batch-card">
       <h2>Topics</h2>
       <p>One topic per line. You can use a short title or <strong>Title: explanation/context</strong>.</p>
-      <textarea id="topics" class="topic-box" placeholder="The Boom of Crash Gambling: crash games are one of the hottest casino genres right now.\nWhy Plinko Keeps Pulling Players In: simple rules and high-energy drops make it easy to understand.\nCrypto Casino Withdrawals: what players actually care about when cashing out."></textarea>
+      <textarea id="topics" class="topic-box" placeholder="The Boom of Crash Gambling: crash games are one of the hottest casino genres right now.\nWhy Plinko Keeps Pulling Players In: simple rules and high-energy drops make it easy to understand.\nMega Moolah Magic: why giant jackpot stories still pull attention."></textarea>
       <div class="counter" id="topic-count">0 topics</div>
 
       <div class="grid two" style="margin-top:14px">
         <label>Primary market
           <select id="market"><option>US</option><option>UK</option><option>CA</option><option>AU</option></select>
         </label>
-        <label>Link articles to
+        <label>Default link setting
           <select id="game">
             <option value="auto">Auto-detect per topic</option>
             <option value="">Dolla homepage / general</option>
-            <option value="voidrun">VOID Run</option><option value="plinko">Plinko</option><option value="mines">Mines</option>
+            <option value="voidrun">VOID Run</option><option value="crash">Crash</option><option value="plinko">Plinko</option><option value="mines">Mines</option>
             <option value="dice">Dice</option><option value="limbo">Limbo</option><option value="keno">Keno</option><option value="hilo">Hi/Lo</option>
             <option value="slots">Slots</option><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option>
             <option value="olympus">Gods of Olympus</option><option value="inferno">Inferno Vault</option><option value="bigscore">The Big Score</option>
-            <option value="chariot">Chariot Race</option><option value="penalty">Penalty Shooter</option>
+            <option value="chariot">Chariot Race</option><option value="penalty">Penalty Shooter</option><option value="lucky7">Lucky 7</option><option value="dond">Deal or No Deal</option>
           </select>
         </label>
       </div>
+
+      <div class="small-label">Link each article to</div>
+      <div class="topic-link-help">Optional: choose a different Dolla page for each topic. This controls the CTA/link in that article.</div>
+      <div class="topic-links" id="topic-links"><div class="muted">Add topics above and their link selectors will appear here.</div></div>
 
       <div class="note-box" style="margin-top:14px"><strong>Images come at review time.</strong> Batch mode temporarily satisfies the image check so Gemini can write without wasting repair calls. The saved review has that placeholder removed and Publish stays disabled until you add a real image and re-run the quality gate.</div>
 
@@ -69,9 +75,13 @@
 <script>
 (() => {
   const STORE='dolla_batch_drafts_v1';
-  const topicsEl=document.getElementById('topics'), countEl=document.getElementById('topic-count');
+  const DESTINATIONS=[
+    ['', 'Dolla homepage / general'],['voidrun','VOID Run'],['crash','Crash'],['plinko','Plinko'],['mines','Mines'],['dice','Dice'],['limbo','Limbo'],['keno','Keno'],['hilo','Hi/Lo'],['slots','Slots'],['blackjack','Blackjack'],['roulette','Roulette'],['olympus','Gods of Olympus'],['inferno','Inferno Vault'],['bigscore','The Big Score'],['chariot','Chariot Race'],['penalty','Penalty Shooter'],['lucky7','Lucky 7'],['dond','Deal or No Deal']
+  ];
+  const topicsEl=document.getElementById('topics'), countEl=document.getElementById('topic-count'), topicLinksEl=document.getElementById('topic-links');
   const progress=document.getElementById('progress'), draftsEl=document.getElementById('drafts');
   const generateBtn=document.getElementById('generate'), stopBtn=document.getElementById('stop'), overall=document.getElementById('overall');
+  const topicOverrides={};
   let stopRequested=false, running=false;
 
   function lines(){return topicsEl.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).slice(0,6)}
@@ -88,34 +98,66 @@
     s=s.toLowerCase();
     if(/void run|crash/.test(s)) return 'voidrun'; if(/plinko/.test(s)) return 'plinko'; if(/mines?\b/.test(s)) return 'mines';
     if(/blackjack/.test(s)) return 'blackjack'; if(/roulette/.test(s)) return 'roulette'; if(/keno/.test(s)) return 'keno';
-    if(/limbo/.test(s)) return 'limbo'; if(/\bdice\b/.test(s)) return 'dice'; if(/slot/.test(s)) return 'slots';
+    if(/limbo/.test(s)) return 'limbo'; if(/\bdice\b/.test(s)) return 'dice'; if(/slot|mega moolah|wowpot|jackpot/.test(s)) return 'slots';
     if(/hi[ -]?lo|higher.*lower/.test(s)) return 'hilo'; if(/olympus|zeus|poseidon/.test(s)) return 'olympus';
     if(/inferno/.test(s)) return 'inferno'; if(/big score|bank heist/.test(s)) return 'bigscore'; if(/chariot/.test(s)) return 'chariot';
-    if(/penalty|football|soccer/.test(s)) return 'penalty'; return '';
+    if(/penalty|football|soccer/.test(s)) return 'penalty'; if(/lucky 7/.test(s)) return 'lucky7'; if(/deal or no deal/.test(s)) return 'dond'; return '';
   }
+  function destinationLabel(slug){return DESTINATIONS.find(x=>x[0]===slug)?.[1]||'Dolla homepage / general'}
+  function destinationOptions(selected, includeDefault=true){
+    let html=includeDefault?'<option value="__default__">Use default setting</option>':'';
+    html+=DESTINATIONS.map(([slug,label])=>`<option value="${slug}" ${selected===slug?'selected':''}>${label}</option>`).join('');
+    return html;
+  }
+  function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+  function renderTopicLinks(){
+    const raw=lines().slice(0,5);
+    if(!raw.length){topicLinksEl.innerHTML='<div class="muted">Add topics above and their link selectors will appear here.</div>';return}
+    topicLinksEl.innerHTML=raw.map((r,i)=>{
+      const p=splitTopic(r), saved=Object.prototype.hasOwnProperty.call(topicOverrides,r)?topicOverrides[r]:'__default__';
+      return `<div class="topic-link-row"><div class="topic-link-title">${i+1}. ${escapeHtml(p.title)}</div><select class="topic-link-select" data-raw="${encodeURIComponent(r)}">${destinationOptions(saved,true)}</select></div>`;
+    }).join('');
+  }
+
   function getDrafts(){try{return JSON.parse(localStorage.getItem(STORE)||'[]')}catch{return []}}
   function saveDrafts(v){localStorage.setItem(STORE,JSON.stringify(v.slice(0,20)))}
   function addDraft(d){const all=getDrafts();all.unshift(d);saveDrafts(all);renderDrafts()}
-  function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function renderDrafts(){
     const all=getDrafts();
-    draftsEl.innerHTML=all.length?all.map(d=>`<div class="draft-card"><strong>${escapeHtml(d.title)}</strong><p>${escapeHtml(d.gameLabel||'Dolla')} · ${new Date(d.at).toLocaleString()}</p><div class="draft-actions"><button class="btn primary open-draft" data-id="${d.id}">Review article →</button><button class="btn ghost delete-draft" data-id="${d.id}">Remove</button></div></div>`).join(''):'<div class="muted">No batch drafts yet.</div>';
+    draftsEl.innerHTML=all.length?all.map(d=>`<div class="draft-card"><strong>${escapeHtml(d.title)}</strong><p>Links to: ${escapeHtml(d.gameLabel||'Dolla homepage / general')} · ${new Date(d.at).toLocaleString()}</p><div class="draft-actions"><button class="btn primary open-draft" data-id="${d.id}">Review article →</button><button class="btn ghost delete-draft" data-id="${d.id}">Remove</button></div></div>`).join(''):'<div class="muted">No batch drafts yet.</div>';
   }
+
+  function ensureDestinationSelect(doc){
+    let field=doc.querySelector('select[name="game"]');
+    if(field)return field;
+    const old=doc.querySelector('input[name="game"]');
+    if(!old)return null;
+    const current=old.value||'';
+    const select=doc.createElement('select');select.name='game';select.id='game-destination';
+    select.innerHTML=DESTINATIONS.map(([slug,label])=>`<option value="${slug}" ${current===slug?'selected':''}>${label}</option>`).join('');
+    old.replaceWith(select);
+    const label=select.closest('label');if(label&&label.childNodes.length){label.childNodes[0].textContent='Link article to\n            '}
+    return select;
+  }
+
   function prepReviewHtml(html){
     const doc=new DOMParser().parseFromString(html,'text/html');
     let base=doc.querySelector('base'); if(!base){base=doc.createElement('base');doc.head.prepend(base)} base.href=location.origin+'/';
+    ensureDestinationSelect(doc);
     const image=doc.querySelector('#image-url'); if(image) image.setAttribute('value','');
     const alt=doc.querySelector('input[name="alt"]'); if(alt) alt.setAttribute('value','');
     const stat=doc.querySelector('#upload-status'); if(stat) stat.textContent='No image attached — paste or upload the real article image.';
     doc.querySelectorAll('.publish-box button').forEach(b=>b.setAttribute('disabled','disabled'));
     const verdict=doc.querySelector('.verdict'); if(verdict){verdict.classList.remove('ok');verdict.classList.add('bad');verdict.innerHTML='<span class="dot"></span>BATCH DRAFT — add image & re-run gate';}
-    const main=doc.querySelector('main'); if(main){const banner=doc.createElement('div');banner.className='banner bad';banner.innerHTML='<strong>Batch draft</strong><span>Add a real image + alt text, then click <b>Re-run Quality Gate</b>. Publish stays disabled until that clean review returns.</span>';main.prepend(banner)}
+    const main=doc.querySelector('main'); if(main){const banner=doc.createElement('div');banner.className='banner bad';banner.innerHTML='<strong>Batch draft</strong><span>Check the <b>Link article to</b> page, add a real image + alt text, then click <b>Re-run Quality Gate</b>. Publish stays disabled until that clean review returns.</span>';main.prepend(banner)}
     return '<!doctype html>\n'+doc.documentElement.outerHTML;
   }
   function openDraft(id){const d=getDrafts().find(x=>x.id===id);if(!d)return;const w=window.open('','_blank');if(!w)return alert('Your browser blocked the review tab. Allow pop-ups for 127.0.0.1 and try again.');const html=prepReviewHtml(d.html);w.document.open();w.document.write(html);w.document.close()}
   function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 
-  topicsEl.addEventListener('input',()=>{const n=lines().length;countEl.textContent=`${n} topic${n===1?'':'s'}${n>5?' — only first 5 will run':''}`});
+  topicsEl.addEventListener('input',()=>{const n=lines().length;countEl.textContent=`${n} topic${n===1?'':'s'}${n>5?' — only first 5 will run':''}`;renderTopicLinks()});
+  topicLinksEl.addEventListener('change',e=>{const sel=e.target.closest('.topic-link-select');if(!sel)return;const raw=decodeURIComponent(sel.dataset.raw||'');topicOverrides[raw]=sel.value});
   draftsEl.addEventListener('click',e=>{const open=e.target.closest('.open-draft'), del=e.target.closest('.delete-draft');if(open)openDraft(open.dataset.id);if(del){saveDrafts(getDrafts().filter(x=>x.id!==del.dataset.id));renderDrafts()}});
   document.getElementById('clear').addEventListener('click',()=>{if(confirm('Clear all saved batch drafts from this browser?')){localStorage.removeItem(STORE);renderDrafts()}});
   stopBtn.addEventListener('click',()=>{stopRequested=true;stopBtn.disabled=true;stopBtn.textContent='Stopping after current…'});
@@ -125,13 +167,17 @@
     running=true;stopRequested=false;generateBtn.disabled=true;stopBtn.disabled=false;stopBtn.textContent='Stop after current article';
     progress.innerHTML='';
     const market=document.getElementById('market').value, gameChoice=document.getElementById('game').value;
-    const rows=raw.map((r,i)=>{const p=splitTopic(r);return {raw:r,...p,id:'p'+Date.now()+i,state:'waiting'}});
-    function paint(){progress.innerHTML=rows.map((r,i)=>`<div class="progress-item"><div class="progress-row"><strong>${i+1}. ${escapeHtml(r.title)}</strong><span class="state ${r.state}">${r.state}</span></div>${r.message?`<div class="muted small-text">${escapeHtml(r.message)}</div>`:''}</div>`).join('')}
+    const rows=raw.map((r,i)=>{
+      const p=splitTopic(r), override=topicOverrides[r]??'__default__';
+      let game=override;
+      if(override==='__default__') game=gameChoice==='auto'?guessGame(r):gameChoice;
+      return {raw:r,...p,game,id:'p'+Date.now()+i,state:'waiting'};
+    });
+    function paint(){progress.innerHTML=rows.map((r,i)=>`<div class="progress-item"><div class="progress-row"><strong>${i+1}. ${escapeHtml(r.title)}</strong><span class="state ${r.state}">${r.state}</span></div><div class="muted small-text">Link: ${escapeHtml(destinationLabel(r.game))}</div>${r.message?`<div class="muted small-text">${escapeHtml(r.message)}</div>`:''}</div>`).join('')}
     paint();let completed=0;
     for(let i=0;i<rows.length;i++){
       if(stopRequested)break;const r=rows[i];r.state='running';r.message='Gemini is writing…';paint();overall.textContent=`Generating ${i+1} of ${rows.length}`;
-      const game=gameChoice==='auto'?guessGame(r.raw):gameChoice;
-      const fd=new FormData();fd.append('mode','generate');fd.append('title',r.title);fd.append('market',market);fd.append('game',game);fd.append('trend_context',r.context||r.raw);
+      const fd=new FormData();fd.append('mode','generate');fd.append('title',r.title);fd.append('market',market);fd.append('game',r.game);fd.append('trend_context',r.context||r.raw);
       fd.append('image','https://dollacasino.com/img/guides/__batch-pending-image__.png');fd.append('alt','Temporary batch image placeholder — replace before publishing');fd.append('intent','informational');
       try{
         const res=await fetch('/feed',{method:'POST',body:fd});const html=await res.text();if(!res.ok)throw new Error(`Server returned ${res.status}`);
@@ -143,7 +189,7 @@
           throw new Error(bannerText || 'Gemini did not return an article body');
         }
         r.state='done';r.message='Draft generated — ready for proofreading.';
-        addDraft({id:'d'+Date.now()+i,title,gameLabel:game||'Dolla',at:Date.now(),html});completed++;
+        addDraft({id:'d'+Date.now()+i,title,game:r.game,gameLabel:destinationLabel(r.game),at:Date.now(),html});completed++;
       }catch(err){r.state='error';r.message=(err.message||String(err)).slice(0,220)}
       paint();
       if(i<rows.length-1 && !stopRequested){overall.textContent=`Cooling down before article ${i+2}…`;await sleep(5000)}
