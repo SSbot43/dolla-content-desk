@@ -16,6 +16,7 @@
   <div class="header-actions">
     <a class="btn ghost" href="{{ site_base }}" target="_blank" rel="noopener">View site ↗</a>
     <a class="btn secondary" href="{{ url_for('ideas') }}">Trending ideas</a>
+    <a class="btn secondary" href="/static/batch.html">Batch 3–5 topics</a>
     <a class="btn primary" href="{{ url_for('feed') }}">+ Create article</a>
   </div>
 </header>
@@ -24,8 +25,8 @@
   <section class="hero-strip">
     <div>
       <div class="eyebrow">180-day SEO sprint</div>
-      <h2>Headline → Gemini → review → publish.</h2>
-      <p>The content engine stays underneath. You can start from your own headline, a fresh trend, or a complete article.</p>
+      <h2>Topic → Gemini → review → publish.</h2>
+      <p>Start from one topic, a batch of 3–5, a fresh trend, or a complete article of your own.</p>
     </div>
     <div class="system-pills">
       <span class="pill {{ 'ok' if gemini_ready else 'bad' }}">Gemini {{ 'ready' if gemini_ready else 'missing key' }}</span>
@@ -36,18 +37,24 @@
   <section class="workflow-grid">
     <a class="workflow-card" href="{{ url_for('feed') }}">
       <span class="workflow-num">1</span>
-      <strong>Give Gemini a headline</strong>
+      <strong>Give Gemini one topic</strong>
       <p>You choose the subject, Dolla game/site link and image. Gemini fills the SEO brief and writes.</p>
       <span class="workflow-link">Create article →</span>
     </a>
-    <a class="workflow-card featured" href="{{ url_for('ideas') }}">
+    <a class="workflow-card featured" href="/static/batch.html">
       <span class="workflow-num">2</span>
+      <strong>Generate 3–5 topics</strong>
+      <p>Paste several topics once. Gemini writes them sequentially while you leave the page open, then you review each draft.</p>
+      <span class="workflow-link">Start batch →</span>
+    </a>
+    <a class="workflow-card" href="{{ url_for('ideas') }}">
+      <span class="workflow-num">3</span>
       <strong>Pick a trending idea</strong>
       <p>See fresh themes with source + date, then send one straight into the Gemini writing flow.</p>
       <span class="workflow-link">See trends →</span>
     </a>
     <a class="workflow-card" href="{{ url_for('feed', mode='paste') }}">
-      <span class="workflow-num">3</span>
+      <span class="workflow-num">4</span>
       <strong>Paste my own article</strong>
       <p>Paste your writing and image. It still passes the same SEO, claims and duplicate checks.</p>
       <span class="workflow-link">Paste article →</span>
@@ -78,7 +85,7 @@
           <td><span class="status-chip">{{ b.status }}</span></td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="empty-cell">Nothing waiting. Start from a headline, trend idea, or your own article.</td></tr>
+        <tr><td colspan="5" class="empty-cell">Nothing waiting. Start from a topic, a batch, a trend idea, or your own article.</td></tr>
         {% endfor %}
       </table>
     </div>
