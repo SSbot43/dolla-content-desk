@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>New article — Dolla Content Desk</title>
+  <title>Create article — Dolla Content Desk</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='content-upgrades.css') }}">
 </head>
 <body>
 <header>
@@ -12,64 +13,66 @@
     <div class="eyebrow">Dolla Content OS</div>
     <h1>Create article</h1>
   </div>
-  <a class="btn ghost" href="{{ url_for('dashboard') }}">← Dashboard</a>
+  <div class="header-actions">
+    <a class="btn ghost" href="{{ url_for('ideas') }}">Trending ideas</a>
+    <a class="btn ghost" href="{{ url_for('dashboard') }}">← Dashboard</a>
+  </div>
 </header>
 
 <main class="page narrow">
   <form method="post" action="{{ url_for('feed') }}" enctype="multipart/form-data" class="editor-card" id="article-form">
     <div class="mode-tabs">
       <label class="mode-choice">
-        <input type="radio" name="mode" value="generate" checked>
-        <span><strong>Generate with Gemini</strong><small>Give it the brief; the existing engine writes and repairs.</small></span>
+        <input type="radio" name="mode" value="generate" {{ 'checked' if prefill.mode != 'paste' else '' }}>
+        <span>
+          <strong>Give Gemini a headline</strong>
+          <small>You choose the topic and Dolla destination. Gemini fills the SEO brief and writes the article.</small>
+        </span>
       </label>
       <label class="mode-choice">
-        <input type="radio" name="mode" value="paste">
-        <span><strong>My own article</strong><small>Paste your Markdown/article text and run it through the same gate.</small></span>
+        <input type="radio" name="mode" value="paste" {{ 'checked' if prefill.mode == 'paste' else '' }}>
+        <span>
+          <strong>My own article</strong>
+          <small>Paste your article and image, then run it through the same quality gate.</small>
+        </span>
       </label>
     </div>
 
-    <div class="section-title">Article brief</div>
-    <div class="grid two">
-      <label>Primary keyword
-        <input name="keyword" placeholder="crypto casino withdrawal">
-      </label>
-      <label>Slug <small>optional — auto-created if blank</small>
-        <input name="slug" id="slug" placeholder="crypto-withdrawals">
-      </label>
+    {% if prefill.trend_context %}
+    <div class="trend-prefill">
+      <strong>Started from a current trend</strong>
+      <span>{{ prefill.trend_context }}</span>
+      <small>Gemini uses this only as inspiration; unverified third-party claims and numbers are not carried into the article.</small>
     </div>
+    {% endif %}
+    <input type="hidden" name="trend_context" value="{{ prefill.trend_context }}">
 
-    <label>Title *
-      <input name="title" required placeholder="How Crypto Withdrawals Work on Dolla">
+    <div class="section-title">1. What should the article be about?</div>
+    <label class="headline-field">Headline *
+      <input name="title" id="title" required value="{{ prefill.title }}"
+             placeholder="Why Crash Games Are Getting More Popular With Online Casino Players">
+      <small class="generate-only">This is the main thing you need to provide. Gemini handles the article, H1, keyword, meta and angle.</small>
     </label>
-    <label>Meta description
-      <textarea name="meta" rows="2" placeholder="110–155 chars; the quality gate can auto-trim an overlong meta."></textarea>
-    </label>
-    <label>H1 <small>defaults to title</small>
-      <input name="h1">
-    </label>
-
-    <div class="grid three">
-      <label>Market
-        <select name="market"><option>US</option><option>UK</option><option>CA</option><option>AU</option></select>
-      </label>
-      <label>Game slug
-        <input name="game" placeholder="plinko">
-      </label>
-      <label>Intent
-        <input name="intent" value="informational">
-      </label>
-    </div>
 
     <div class="grid two">
-      <label>Angle
-        <input name="angle" placeholder="practical first-party guide">
+      <label>Link the article to
+        <select name="game" id="game">
+          {% for d in destinations %}
+          <option value="{{ d.slug }}" {{ 'selected' if prefill.game == d.slug else '' }}>{{ d.label }}</option>
+          {% endfor %}
+        </select>
+        <small>The finished article gets a Dolla CTA to this game/site destination.</small>
       </label>
-      <label>Why Dolla fits
-        <input name="why" placeholder="free demo, no-KYC standard flow, crypto cashouts">
+      <label>Primary market
+        <select name="market">
+          {% for m in ['US','UK','CA','AU'] %}
+          <option {{ 'selected' if prefill.market == m else '' }}>{{ m }}</option>
+          {% endfor %}
+        </select>
       </label>
     </div>
 
-    <div class="section-title">Hero image</div>
+    <div class="section-title">2. Hero image</div>
     <div class="paste-image" id="paste-image" tabindex="0">
       <strong>Paste an image here</strong>
       <span>Ctrl+V / Cmd+V, drag a file in, or choose a file below.</span>
@@ -85,15 +88,49 @@
     </div>
     <label>Image alt text
       <input name="alt" placeholder="Describe what the image actually shows">
+      <small>The quality gate requires real alt text before publishing.</small>
     </label>
 
-    <div class="section-title manual-only">Your article</div>
+    <div class="section-title manual-only">3. Your article</div>
     <label class="manual-only">Paste article / Markdown
-      <textarea name="body" id="body" rows="22" placeholder="Paste the complete article here. It will go through the same claims, SEO, distinctiveness and quality gate before it can queue or publish."></textarea>
+      <textarea name="body" id="body" rows="24"
+                placeholder="Paste the complete article here. It will go through the same claims, SEO, distinctiveness and quality gate."></textarea>
     </label>
+
+    <details class="advanced">
+      <summary>Advanced SEO fields — optional</summary>
+      <div class="advanced-body">
+        <p class="muted generate-only">Leave these blank in Gemini mode unless you specifically want to override the automatic brief.</p>
+        <div class="grid two">
+          <label>Primary keyword
+            <input name="keyword" placeholder="auto-filled from the headline">
+          </label>
+          <label>Slug
+            <input name="slug" id="slug" placeholder="auto-created from the headline">
+          </label>
+        </div>
+        <label>Meta description
+          <textarea name="meta" rows="2" placeholder="Gemini creates this in headline mode"></textarea>
+        </label>
+        <label>H1
+          <input name="h1" placeholder="defaults to headline">
+        </label>
+        <div class="grid two">
+          <label>Angle
+            <input name="angle" placeholder="auto-filled">
+          </label>
+          <label>Intent
+            <input name="intent" value="informational">
+          </label>
+        </div>
+        <label>Why Dolla fits
+          <input name="why" placeholder="auto-filled from the chosen destination">
+        </label>
+      </div>
+    </details>
 
     <div class="sticky-actions">
-      <div class="muted">Nothing publishes from this screen. First you review the gate result.</div>
+      <div class="muted" id="flow-note">Gemini writes first. Nothing publishes until you review it.</div>
       <button class="btn primary" type="submit" id="submit-label">Generate & Review →</button>
     </div>
   </form>
