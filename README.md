@@ -7,11 +7,14 @@ rendering, ramp scheduling, or publishing.
 ## Run
 ```bash
 pip install -r requirements.txt
-set CONTENT_REPO=E:/Claude work/dollacasino-content
+set CONTENT_REPO=C:/path/to/dollacasino-content
 set GEMINI_API_KEY=...
-python app.py
+python bulk_launcher.py
 ```
 Then open `http://127.0.0.1:5000`.
+
+On Windows, `START_WINDOWS.bat` automatically uses a sibling `dollacasino-content` folder and
+overrides stale `CONTENT_REPO` values from copied `.env` files.
 
 ## Current workflow
 - **Dashboard** — today's ramp cap, queued/draft/live counts, system status, upcoming queue, live guides.

@@ -42,6 +42,7 @@ if errorlevel 1 (
 if exist "%ENGINE_DIR%\requirements.txt" py -m pip install -r "%ENGINE_DIR%\requirements.txt"
 
 echo [4/4] Starting Content Desk...
+set "CONTENT_REPO=%ENGINE_DIR%"
 start "Dolla Content Desk Server" cmd /k "cd /d ""%DESK_DIR%"" && set PORT=5001 && py bulk_launcher.py"
 timeout /t 4 /nobreak >nul
 start "" "%APP_URL%"

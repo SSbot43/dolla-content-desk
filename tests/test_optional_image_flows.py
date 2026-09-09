@@ -79,6 +79,15 @@ class OptionalImageFlowTests(unittest.TestCase):
         self.assertRegex(page, r"<button[^>]*disabled[^>]*>Queue for later")
         self.assertRegex(page, r"<button[^>]*disabled[^>]*>Publish &(?:amp;)? Push")
 
+    def test_windows_launcher_overrides_stale_content_repo_path(self):
+        launcher_source = (Path(desk.__file__).parent / "START_WINDOWS.bat").read_text(encoding="utf-8")
+
+        self.assertIn('set "CONTENT_REPO=%ENGINE_DIR%"', launcher_source)
+        self.assertLess(
+            launcher_source.index('set "CONTENT_REPO=%ENGINE_DIR%"'),
+            launcher_source.index('py bulk_launcher.py'),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
