@@ -1,40 +1,104 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>New article — Dolla Content Desk</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>New article — Dolla Content Desk</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
 <body>
-<header><h1>New article</h1><a class="btn ghost" href="{{ url_for('dashboard') }}">← Dashboard</a></header>
-
-<form method="post" action="{{ url_for('feed') }}" class="card-form">
-  <div class="mode">
-    <label><input type="radio" name="mode" value="generate" checked> Generate with Gemini (from keyword)</label>
-    <label><input type="radio" name="mode" value="paste"> I'll paste the body</label>
+<header>
+  <div>
+    <div class="eyebrow">Dolla Content OS</div>
+    <h1>Create article</h1>
   </div>
+  <a class="btn ghost" href="{{ url_for('dashboard') }}">← Dashboard</a>
+</header>
 
-  <label>Primary keyword *<input name="keyword" required placeholder="crypto casino withdrawal"></label>
-  <label>Slug *<input name="slug" required placeholder="crypto-withdrawals"></label>
-  <label>Title *<input name="title" required></label>
-  <label>Meta description<input name="meta" placeholder="110–155 chars (auto-trimmed if long)"></label>
-  <label>H1 (defaults to Title)<input name="h1"></label>
+<main class="page narrow">
+  <form method="post" action="{{ url_for('feed') }}" enctype="multipart/form-data" class="editor-card" id="article-form">
+    <div class="mode-tabs">
+      <label class="mode-choice">
+        <input type="radio" name="mode" value="generate" checked>
+        <span><strong>Generate with Gemini</strong><small>Give it the brief; the existing engine writes and repairs.</small></span>
+      </label>
+      <label class="mode-choice">
+        <input type="radio" name="mode" value="paste">
+        <span><strong>My own article</strong><small>Paste your Markdown/article text and run it through the same gate.</small></span>
+      </label>
+    </div>
 
-  <div class="row">
-    <label>Angle<input name="angle" placeholder="practical first-party guide"></label>
-    <label>Game slug (optional)<input name="game" placeholder="plinko"></label>
-  </div>
-  <div class="row">
-    <label>Market
-      <select name="market"><option>US</option><option>UK</option><option>CA</option><option>AU</option></select></label>
-    <label>Intent<input name="intent" placeholder="informational"></label>
-  </div>
-  <label>Why Dolla fits<input name="why" placeholder="no-KYC standard flow, free demo on every game"></label>
-  <div class="row">
-    <label>Image URL<input name="image" placeholder="https://dollacasino.com/static/img/guides/…png"></label>
-    <label>Image alt text<input name="alt" placeholder="describe the image (required)"></label>
-  </div>
+    <div class="section-title">Article brief</div>
+    <div class="grid two">
+      <label>Primary keyword
+        <input name="keyword" placeholder="crypto casino withdrawal">
+      </label>
+      <label>Slug <small>optional — auto-created if blank</small>
+        <input name="slug" id="slug" placeholder="crypto-withdrawals">
+      </label>
+    </div>
 
-  <label>Body (Markdown) — required only for “paste” mode
-    <textarea name="body" rows="10" placeholder="Leave blank when generating with Gemini."></textarea></label>
+    <label>Title *
+      <input name="title" required placeholder="How Crypto Withdrawals Work on Dolla">
+    </label>
+    <label>Meta description
+      <textarea name="meta" rows="2" placeholder="110–155 chars; the quality gate can auto-trim an overlong meta."></textarea>
+    </label>
+    <label>H1 <small>defaults to title</small>
+      <input name="h1">
+    </label>
 
-  <button class="btn" type="submit">Generate / Validate →</button>
-</form>
-</body></html>
+    <div class="grid three">
+      <label>Market
+        <select name="market"><option>US</option><option>UK</option><option>CA</option><option>AU</option></select>
+      </label>
+      <label>Game slug
+        <input name="game" placeholder="plinko">
+      </label>
+      <label>Intent
+        <input name="intent" value="informational">
+      </label>
+    </div>
+
+    <div class="grid two">
+      <label>Angle
+        <input name="angle" placeholder="practical first-party guide">
+      </label>
+      <label>Why Dolla fits
+        <input name="why" placeholder="free demo, no-KYC standard flow, crypto cashouts">
+      </label>
+    </div>
+
+    <div class="section-title">Hero image</div>
+    <div class="paste-image" id="paste-image" tabindex="0">
+      <strong>Paste an image here</strong>
+      <span>Ctrl+V / Cmd+V, drag a file in, or choose a file below.</span>
+      <div class="upload-status" id="upload-status">No image attached yet.</div>
+    </div>
+    <div class="grid two">
+      <label>Choose image file
+        <input type="file" name="image_file" id="image-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+      </label>
+      <label>Or image URL
+        <input name="image" id="image-url" placeholder="https://dollacasino.com/img/guides/…">
+      </label>
+    </div>
+    <label>Image alt text
+      <input name="alt" placeholder="Describe what the image actually shows">
+    </label>
+
+    <div class="section-title manual-only">Your article</div>
+    <label class="manual-only">Paste article / Markdown
+      <textarea name="body" id="body" rows="22" placeholder="Paste the complete article here. It will go through the same claims, SEO, distinctiveness and quality gate before it can queue or publish."></textarea>
+    </label>
+
+    <div class="sticky-actions">
+      <div class="muted">Nothing publishes from this screen. First you review the gate result.</div>
+      <button class="btn primary" type="submit" id="submit-label">Generate & Review →</button>
+    </div>
+  </form>
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
