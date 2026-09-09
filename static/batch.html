@@ -113,6 +113,7 @@
     return '<!doctype html>\n'+doc.documentElement.outerHTML;
   }
   function openDraft(id){const d=getDrafts().find(x=>x.id===id);if(!d)return;const w=window.open('','_blank');if(!w)return alert('Your browser blocked the review tab. Allow pop-ups for 127.0.0.1 and try again.');const html=prepReviewHtml(d.html);w.document.open();w.document.write(html);w.document.close()}
+  function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 
   topicsEl.addEventListener('input',()=>{const n=lines().length;countEl.textContent=`${n} topic${n===1?'':'s'}${n>5?' — only first 5 will run':''}`});
   draftsEl.addEventListener('click',e=>{const open=e.target.closest('.open-draft'), del=e.target.closest('.delete-draft');if(open)openDraft(open.dataset.id);if(del){saveDrafts(getDrafts().filter(x=>x.id!==del.dataset.id));renderDrafts()}});
@@ -135,11 +136,17 @@
       try{
         const res=await fetch('/feed',{method:'POST',body:fd});const html=await res.text();if(!res.ok)throw new Error(`Server returned ${res.status}`);
         const doc=new DOMParser().parseFromString(html,'text/html');const title=doc.querySelector('.review-head h2')?.textContent?.trim()||r.title;
-        const hasError=!!doc.querySelector('.banner.bad');
-        r.state=hasError?'error':'done';r.message=hasError?'Generated, but the review has an issue to fix.':'Draft generated — ready for proofreading.';
+        const banner=doc.querySelector('.banner.bad');
+        const bannerText=(banner?.textContent||'').replace(/\s+/g,' ').trim();
+        const bodyText=(doc.querySelector('#body')?.value||'').trim();
+        if(/Gemini unavailable|Could not prepare the Gemini brief/i.test(bannerText) || !bodyText){
+          throw new Error(bannerText || 'Gemini did not return an article body');
+        }
+        r.state='done';r.message='Draft generated — ready for proofreading.';
         addDraft({id:'d'+Date.now()+i,title,gameLabel:game||'Dolla',at:Date.now(),html});completed++;
-      }catch(err){r.state='error';r.message=err.message||String(err)}
+      }catch(err){r.state='error';r.message=(err.message||String(err)).slice(0,220)}
       paint();
+      if(i<rows.length-1 && !stopRequested){overall.textContent=`Cooling down before article ${i+2}…`;await sleep(5000)}
     }
     overall.textContent=stopRequested?`Stopped. ${completed} draft${completed===1?'':'s'} ready.`:`Finished. ${completed} of ${rows.length} drafts ready.`;
     running=false;generateBtn.disabled=false;stopBtn.disabled=true;stopBtn.textContent='Stop after current article';
