@@ -88,6 +88,21 @@ class OptionalImageFlowTests(unittest.TestCase):
             launcher_source.index('py bulk_launcher.py'),
         )
 
+    def test_push_all_queued_ignores_already_published_history(self):
+        already_live = desk.Brief(slug="already-live", body_md=article_body())
+        waiting = desk.Brief(slug="waiting", body_md=article_body())
+
+        with (
+            patch.object(desk, "load_queue", return_value=[already_live, waiting]),
+            patch.object(desk, "load_published", return_value={"already-live": {}}),
+            patch.object(desk, "commit_and_push") as commit_and_push,
+        ):
+            response = self.client.post("/push-queued-all")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("pushed=1", response.headers["Location"])
+        commit_and_push.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

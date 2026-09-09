@@ -36,7 +36,8 @@ def queue_local():
 
 @app.route("/push-queued-all", methods=["POST"])
 def push_queued_all():
-    queue = [b for b in desk.load_queue() if b.body_md]
+    published = desk.load_published()
+    queue = [b for b in desk.load_queue() if b.body_md and b.slug not in published]
     if not queue:
         return redirect(url_for("dashboard", pushed=0))
 
