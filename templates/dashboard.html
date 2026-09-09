@@ -1,40 +1,84 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Dolla Content Desk</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Dolla Content Desk</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
 <body>
 <header>
-  <h1>Dolla Content Desk</h1>
-  <a class="btn" href="{{ url_for('feed') }}">+ New article</a>
+  <div>
+    <div class="eyebrow">Dolla Content OS</div>
+    <h1>Content Desk</h1>
+  </div>
+  <div class="header-actions">
+    <a class="btn ghost" href="{{ site_base }}" target="_blank" rel="noopener">View site ↗</a>
+    <a class="btn primary" href="{{ url_for('feed') }}">+ Create article</a>
+  </div>
 </header>
 
-<section class="stats">
-  <div class="stat"><span>{{ cap_today }}</span>today's cap (ramp)</div>
-  <div class="stat"><span>{{ queued }}</span>queued</div>
-  <div class="stat"><span>{{ drafts }}</span>drafts (no body)</div>
-  <div class="stat"><span>{{ live }}</span>live</div>
-  <div class="stat {{ 'ok' if gemini_ready else 'bad' }}">
-    <span>{{ 'ON' if gemini_ready else 'OFF' }}</span>Gemini key</div>
-</section>
+<main class="page">
+  <section class="hero-strip">
+    <div>
+      <div class="eyebrow">180-day SEO sprint</div>
+      <h2>Write, gate, schedule, publish.</h2>
+      <p>The proven content engine stays underneath. This desk is just the fast control layer.</p>
+    </div>
+    <div class="system-pills">
+      <span class="pill {{ 'ok' if gemini_ready else 'bad' }}">Gemini {{ 'ready' if gemini_ready else 'missing key' }}</span>
+      <span class="pill {{ 'ok' if content_repo_ok else 'bad' }}">Content repo {{ 'connected' if content_repo_ok else 'missing' }}</span>
+    </div>
+  </section>
 
-<h2>Upcoming queue</h2>
-<table>
-  <tr><th>Date</th><th>Slug</th><th>Title</th><th>Market</th><th>Status</th></tr>
-  {% for b in upcoming %}
-  <tr><td>{{ b.publish_date or '—' }}</td><td>{{ b.slug }}</td><td>{{ b.title }}</td>
-      <td>{{ b.target_market }}</td><td>{{ b.status }}</td></tr>
-  {% else %}
-  <tr><td colspan="5" class="muted">Nothing queued yet. Hit “New article”.</td></tr>
-  {% endfor %}
-</table>
+  <section class="stats">
+    <div class="stat"><span>{{ cap_today }}</span><small>Today's ramp cap</small></div>
+    <div class="stat"><span>{{ queued }}</span><small>Queued</small></div>
+    <div class="stat"><span>{{ drafts }}</span><small>Drafts</small></div>
+    <div class="stat"><span>{{ live }}</span><small>Live guides</small></div>
+  </section>
 
-<h2>Recently live</h2>
-<table>
-  <tr><th>Published</th><th>Slug</th><th>Title</th></tr>
-  {% for p in published %}
-  <tr><td>{{ p.published_date }}</td><td>{{ p.slug }}</td><td>{{ p.title }}</td></tr>
-  {% else %}
-  <tr><td colspan="3" class="muted">No live pages yet.</td></tr>
-  {% endfor %}
-</table>
-</body></html>
+  <section class="panel">
+    <div class="panel-title row-between">
+      <span>Upcoming queue</span>
+      <a href="{{ url_for('feed') }}">Create another →</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Date</th><th>Title</th><th>Keyword</th><th>Market</th><th>Status</th></tr>
+        {% for b in upcoming %}
+        <tr>
+          <td>{{ b.publish_date or 'Next slot' }}</td>
+          <td><strong>{{ b.title }}</strong><div class="muted small-text">/guides/{{ b.slug }}</div></td>
+          <td>{{ b.primary_keyword or '—' }}</td>
+          <td>{{ b.target_market }}</td>
+          <td><span class="status-chip">{{ b.status }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="empty-cell">Nothing waiting. Create a Gemini article or paste one of your own.</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">Recently live</div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Published</th><th>Title</th><th>URL</th><th>Status</th></tr>
+        {% for p in published %}
+        <tr>
+          <td>{{ p.published_date }}</td>
+          <td><strong>{{ p.title }}</strong></td>
+          <td><a href="{{ site_base }}/guides/{{ p.slug }}" target="_blank" rel="noopener">/guides/{{ p.slug }} ↗</a></td>
+          <td><span class="status-chip live">{{ p.status or 'live' }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="empty-cell">No published guides yet.</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>
