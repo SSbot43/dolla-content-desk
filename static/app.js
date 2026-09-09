@@ -12,6 +12,7 @@
   const modeInputs = [...document.querySelectorAll('input[name="mode"]')];
   const manualOnly = [...document.querySelectorAll('.manual-only')];
   const generateOnly = [...document.querySelectorAll('.generate-only')];
+  const BATCH_STORE = 'dolla_batch_drafts_v1';
 
   function currentMode() {
     return modeInputs.find(x => x.checked)?.value || 'generate';
@@ -98,6 +99,44 @@
     return image?.getAsFile() || null;
   }
 
+  function removeApprovedBatchDraft() {
+    // Only remove a saved batch draft after the server has returned a real success banner.
+    // This covers both Queue & Push and Publish & Push while keeping failed attempts available.
+    if (!document.querySelector('.banner.ok')) return;
+    const slug = (slugInput?.value || '').trim();
+    if (!slug) return;
+
+    try {
+      const drafts = JSON.parse(localStorage.getItem(BATCH_STORE) || '[]');
+      if (!Array.isArray(drafts) || !drafts.length) return;
+      const parser = new DOMParser();
+      const kept = drafts.filter(draft => {
+        if (!draft?.html) return true;
+        try {
+          const doc = parser.parseFromString(draft.html, 'text/html');
+          const draftSlug = (doc.querySelector('#slug')?.value || doc.querySelector('input[name="slug"]')?.value || '').trim();
+          return draftSlug !== slug;
+        } catch {
+          return true;
+        }
+      });
+      if (kept.length === drafts.length) return;
+      localStorage.setItem(BATCH_STORE, JSON.stringify(kept));
+
+      // Review tabs are opened from the batch page. Refresh the opener so the completed card
+      // disappears immediately instead of waiting for the user to refresh manually.
+      try {
+        if (window.opener && !window.opener.closed && window.opener.location.origin === window.location.origin) {
+          window.opener.location.reload();
+        }
+      } catch {
+        // Ignore cross-window/browser restrictions; the saved list is still cleaned up.
+      }
+    } catch {
+      // Never let local batch bookkeeping interfere with the review/publish page itself.
+    }
+  }
+
   document.addEventListener('paste', event => {
     const file = pastedImageFromClipboard(event);
     if (file) {
@@ -133,4 +172,5 @@
 
   modeInputs.forEach(input => input.addEventListener('change', updateMode));
   updateMode();
+  removeApprovedBatchDraft();
 })();
