@@ -1,28 +1,30 @@
 # dolla-content-desk
 
-Local **desktop dashboard** for the `dollacasino.com` content sprint. One screen to feed the
-pipeline: drop a keyword → **Gemini** writes a draft → the **quality gate** validates → you queue it
-→ the publisher (in `dollacasino-content`) ships it on the ramp.
-
-It wraps the `dolla_content` backbone and adds no content logic of its own — the gate, claims policy,
-render and Gemini link all live in the content repo.
+Local **content control desk** for the `dollacasino.com` SEO sprint. It sits on top of the existing
+`dollacasino-content` engine; it does **not** reimplement generation, claims policy, quality gating,
+rendering, ramp scheduling, or publishing.
 
 ## Run
 ```bash
 pip install -r requirements.txt
-set CONTENT_REPO=E:/Claude work/dollacasino-content   # path to the backbone repo
-set GEMINI_API_KEY=...                                 # from aistudio.google.com (generate mode only)
-python app.py                                          # http://127.0.0.1:5000
+set CONTENT_REPO=E:/Claude work/dollacasino-content
+set GEMINI_API_KEY=...
+python app.py
 ```
+Then open `http://127.0.0.1:5000`.
 
-## Screens
-- **Dashboard** — today's ramp cap, queued / drafts / live counts, Gemini-key status, upcoming queue, recently live.
-- **New article** — pick *Generate with Gemini (from keyword)* or *paste the body*; fill the brief.
-- **Review** — quality-gate verdict (pass/block + every issue + auto-fixes) and a live page preview; **Queue it** is disabled unless the gate passes.
+## Current workflow
+- **Dashboard** — today's ramp cap, queued/draft/live counts, system status, upcoming queue, live guides.
+- **Generate with Gemini** — fill the brief and let the existing engine generate + repair the draft.
+- **My own article** — paste your own Markdown/article text and send it through the exact same quality and claims gate.
+- **Paste images** — paste an image from the clipboard with Ctrl+V/Cmd+V, drag/drop one, choose a file, or use an image URL. Uploaded images are saved under `static/img/guides/` in the content repo.
+- **Editable review** — edit title, meta, H1, body, image, market and other Brief fields, then re-run the quality gate.
+- **Queue & Push** — assigns the next valid ramp slot, commits the queue (and its local image when needed), and pushes to GitHub so the scheduled publisher can see it.
+- **Publish & Push** — one click from a passing review: queue → existing `run_publish()` → stage content-owned output → commit → `git push`. Cloudflare then deploys from the content repo push.
 
-## How it connects
-- Reads/writes `CONTENT_REPO/content/queue.json` (creating it from `queue.sample.json` on first write).
-- Assigns each queued article the **next free date under the ramp** (`daily_cap`).
-- Re-validates server-side on queue — never trusts the browser round-trip.
-
-Packaging into a real `.exe` (PyInstaller/Electron wrap) is a later step; it runs as a local web app today.
+## Safety / architecture
+- The `dolla_content` engine remains the source of truth.
+- Every queue/publish action re-runs the server-side quality gate.
+- A blocked article cannot queue or publish.
+- Publish commits stage only content-workflow files and referenced guide images, rather than sweeping unrelated local changes into the commit.
+- Git uses the machine's existing credential manager; the UI does not store a GitHub token.
