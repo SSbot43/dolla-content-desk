@@ -1,5 +1,5 @@
-/* Headline-first + trend workflow additions. */
-.workflow-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:16px 0}
+/* Topic-first + trend + batch workflow additions. */
+.workflow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:16px 0}
 .workflow-card{display:flex;flex-direction:column;min-height:190px;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;color:var(--ink);box-shadow:var(--shadow);text-decoration:none!important;transition:.16s transform,.16s border-color,.16s background}
 .workflow-card:hover{transform:translateY(-2px);border-color:#5b4b2b;background:#151d27}
 .workflow-card.featured{background:linear-gradient(145deg,rgba(232,184,75,.09),var(--panel));border-color:#5d4c2d}
@@ -37,6 +37,7 @@
 .custom-headline-body{display:flex;justify-content:space-between;gap:24px;align-items:center;padding:18px}
 .custom-headline-body p{margin:4px 0 0;font-size:12px}
 
+@media(max-width:1050px){.workflow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:850px){
   .workflow-grid{grid-template-columns:1fr}
   .workflow-card{min-height:150px}
