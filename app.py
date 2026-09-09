@@ -13,6 +13,7 @@ import subprocess
 import sys
 from datetime import date, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
@@ -69,6 +70,20 @@ def load_published() -> dict:
     return json.loads(PUBLISHED.read_text(encoding="utf-8")) if PUBLISHED.exists() else {}
 
 
+def comparison_bodies(exclude_slug: str = "") -> list[str]:
+    published = [
+        v.get("body", "")
+        for slug, v in load_published().items()
+        if slug != exclude_slug and v.get("body")
+    ]
+    queued = [
+        b.body_md
+        for b in load_queue()
+        if b.body_md and b.slug != exclude_slug
+    ]
+    return published + queued
+
+
 def next_slot(queue: list[Brief]) -> str:
     counts: dict[str, int] = {}
     for b in queue:
@@ -81,12 +96,6 @@ def next_slot(queue: list[Brief]) -> str:
             return iso
         d += timedelta(days=1)
     return date.today().isoformat()
-
-
-def published_bodies() -> list[str]:
-    return [v.get("body", "") for v in load_published().values()] + [
-        b.body_md for b in load_queue() if b.body_md
-    ]
 
 
 def slugify(value: str) -> str:
@@ -141,6 +150,18 @@ def process_image_upload(brief: Brief) -> str | None:
     return brief.image
 
 
+def image_repo_path(image_url: str) -> str | None:
+    if not image_url:
+        return None
+    name = Path(urlparse(image_url).path).name
+    if not name:
+        return None
+    candidate = GUIDE_IMAGE_DIR / name
+    if candidate.exists():
+        return f"static/img/guides/{name}"
+    return None
+
+
 def queue_brief(brief: Brief) -> Brief:
     queue = load_queue()
     brief.publish_date = brief.publish_date or next_slot(queue)
@@ -160,25 +181,7 @@ def run_git(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def publish_and_push() -> dict:
-    report = run_publish()
-
-    # Stage only files owned by the content workflow, avoiding unrelated local work.
-    paths = {
-        "content/queue.json",
-        "content/published.json",
-        "static/index.html",
-        "static/sitemap.xml",
-    }
-    paths.update(f"static/guides/{slug}.html" for slug in report.get("publishing", []))
-
-    img_status = run_git("status", "--porcelain", "--", "static/img/guides")
-    if img_status.returncode == 0:
-        for line in img_status.stdout.splitlines():
-            rel = line[3:].strip().replace("\\", "/")
-            if rel.startswith("static/img/guides/"):
-                paths.add(rel)
-
+def commit_and_push(paths: set[str], message: str) -> bool:
     add = run_git("add", "--", *sorted(paths))
     if add.returncode != 0:
         raise RuntimeError(add.stderr.strip() or "git add failed")
@@ -186,7 +189,7 @@ def publish_and_push() -> dict:
     diff = run_git("diff", "--cached", "--quiet")
     committed = False
     if diff.returncode == 1:
-        commit = run_git("commit", "-m", f"Publish Dolla content {date.today().isoformat()}")
+        commit = run_git("commit", "-m", message)
         if commit.returncode != 0:
             raise RuntimeError(commit.stderr.strip() or commit.stdout.strip() or "git commit failed")
         committed = True
@@ -196,12 +199,44 @@ def publish_and_push() -> dict:
     push = run_git("push")
     if push.returncode != 0:
         raise RuntimeError(push.stderr.strip() or push.stdout.strip() or "git push failed")
+    return committed
 
+
+def push_queue(brief: Brief) -> bool:
+    paths = {"content/queue.json"}
+    image_path = image_repo_path(brief.image)
+    if image_path:
+        paths.add(image_path)
+    return commit_and_push(paths, f"Queue Dolla guide {brief.slug}")
+
+
+def publish_and_push(brief: Brief) -> dict:
+    report = run_publish()
+    paths = {
+        "content/queue.json",
+        "content/published.json",
+        "static/index.html",
+        "static/sitemap.xml",
+    }
+    paths.update(f"static/guides/{slug}.html" for slug in report.get("publishing", []))
+
+    queued_by_slug = {b.slug: b for b in load_queue()}
+    for slug in report.get("publishing", []):
+        published_brief = queued_by_slug.get(slug)
+        if published_brief:
+            image_path = image_repo_path(published_brief.image)
+            if image_path:
+                paths.add(image_path)
+    current_image = image_repo_path(brief.image)
+    if current_image:
+        paths.add(current_image)
+
+    committed = commit_and_push(paths, f"Publish Dolla content {date.today().isoformat()}")
     return {"report": report, "committed": committed}
 
 
 def show_review(brief: Brief, error: str | None = None, notice: str | None = None):
-    result = gate_run(brief, published_bodies=published_bodies())
+    result = gate_run(brief, published_bodies=comparison_bodies(brief.slug))
     brief = result.fixed_brief or brief
     return render_template(
         "review.html",
@@ -249,7 +284,7 @@ def feed():
     error = None
     if request.form.get("mode") == "generate" and not brief.body_md:
         try:
-            brief, _ = gen.generate(brief, published_bodies=published_bodies())
+            brief, _ = gen.generate(brief, published_bodies=comparison_bodies(brief.slug))
         except gen.GenerationError as exc:
             error = str(exc)
     return show_review(brief, error=error)
@@ -268,23 +303,27 @@ def review():
 @app.route("/queue", methods=["POST"])
 def enqueue():
     brief = Brief.from_dict(json.loads(request.form["brief_json"]))
-    result = gate_run(brief, published_bodies=published_bodies())
+    result = gate_run(brief, published_bodies=comparison_bodies(brief.slug))
     if not result.ok:
         return show_review(brief, error="Still blocked — fix the blocking issues before queueing.")
-    queue_brief(result.fixed_brief or brief)
+    brief = queue_brief(result.fixed_brief or brief)
+    try:
+        push_queue(brief)
+    except Exception as exc:
+        return show_review(brief, error=f"Article is queued locally, but GitHub push failed: {exc}")
     return redirect(url_for("dashboard"))
 
 
 @app.route("/publish-push", methods=["POST"])
 def publish_push():
     brief = Brief.from_dict(json.loads(request.form["brief_json"]))
-    result = gate_run(brief, published_bodies=published_bodies())
+    result = gate_run(brief, published_bodies=comparison_bodies(brief.slug))
     if not result.ok:
         return show_review(brief, error="Still blocked — fix the blocking issues before publishing.")
 
     brief = queue_brief(result.fixed_brief or brief)
     try:
-        outcome = publish_and_push()
+        outcome = publish_and_push(brief)
     except Exception as exc:
         return show_review(brief, error=f"Article is safely queued, but Publish & Push failed: {exc}")
 
