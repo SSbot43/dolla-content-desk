@@ -97,13 +97,13 @@
       <div class="publish-box">
         <div>
           <strong>Ready?</strong>
-          <p>Queue keeps the ramp schedule. Publish & Push runs the existing publisher, commits the content files, and pushes to GitHub for Cloudflare.</p>
+          <p>Queue & Push saves the scheduled article to GitHub. Publish & Push runs the existing publisher and pushes the finished content for Cloudflare.</p>
         </div>
         <form method="post" action="{{ url_for('enqueue') }}">
           <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
-          <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Queue for schedule</button>
+          <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Queue & Push</button>
         </form>
-        <form method="post" action="{{ url_for('publish_push') }}" onsubmit="return confirm('Publish this article through the existing ramp and push the content repo to GitHub?');">
+        <form method="post" action="{{ url_for('publish_push') }}">
           <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
           <button class="btn primary full" type="submit" {{ '' if result.ok else 'disabled' }}>Publish & Push</button>
         </form>
