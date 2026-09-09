@@ -1,13 +1,14 @@
 (() => {
-  const form = document.getElementById('article-form');
   const pasteBox = document.getElementById('paste-image');
   const fileInput = document.getElementById('image-file');
   const imageUrl = document.getElementById('image-url');
   const slugInput = document.getElementById('slug');
   const status = document.getElementById('upload-status');
   const submitLabel = document.getElementById('submit-label');
+  const flowNote = document.getElementById('flow-note');
   const modeInputs = [...document.querySelectorAll('input[name="mode"]')];
   const manualOnly = [...document.querySelectorAll('.manual-only')];
+  const generateOnly = [...document.querySelectorAll('.generate-only')];
 
   function currentMode() {
     return modeInputs.find(x => x.checked)?.value || 'generate';
@@ -16,7 +17,13 @@
   function updateMode() {
     const manual = currentMode() === 'paste';
     manualOnly.forEach(el => el.style.display = manual ? '' : 'none');
+    generateOnly.forEach(el => el.style.display = manual ? 'none' : '');
     if (submitLabel) submitLabel.textContent = manual ? 'Validate & Review →' : 'Generate & Review →';
+    if (flowNote) {
+      flowNote.textContent = manual
+        ? 'Your article is checked first. Nothing publishes until you review it.'
+        : 'Gemini writes first. Nothing publishes until you review it.';
+    }
   }
 
   async function uploadPastedFile(file) {
@@ -28,7 +35,7 @@
     const ext = (file.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
     const safeName = file.name && file.name !== 'image.png' ? file.name : `pasted-image.${ext}`;
     data.append('image', file, safeName);
-    data.append('slug', slugInput?.value || 'guide');
+    data.append('slug', slugInput?.value || document.getElementById('title')?.value || 'guide');
 
     try {
       const res = await fetch('/upload-image', { method: 'POST', body: data });
