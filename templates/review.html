@@ -82,7 +82,7 @@
         <label>Why Dolla fits<input name="why" value="{{ brief.why_dolla }}"></label>
 
         <div class="paste-image small" id="paste-image" tabindex="0">
-          <strong>Paste or drop a replacement image</strong>
+          <strong>Paste or drop an optional replacement image</strong>
           <span>Ctrl+V / Cmd+V works anywhere on this page.</span>
           <div class="upload-status" id="upload-status">{{ brief.image or 'No image attached.' }}</div>
         </div>
@@ -90,7 +90,7 @@
           <label>Image file<input type="file" name="image_file" id="image-file" accept="image/*"></label>
           <label>Image URL<input name="image" id="image-url" value="{{ brief.image }}"></label>
         </div>
-        <label>Image alt text<input name="alt" value="{{ brief.alt }}"></label>
+        <label>Image alt text <small>required when an image is attached</small><input name="alt" value="{{ brief.alt }}"></label>
 
         <label>Article body / Markdown
           <textarea name="body" id="body" rows="26">{{ brief.body_md }}</textarea>

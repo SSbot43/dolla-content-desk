@@ -33,7 +33,7 @@
         <input type="radio" name="mode" value="paste" {{ 'checked' if prefill.mode == 'paste' else '' }}>
         <span>
           <strong>My own article</strong>
-          <small>Paste your article and image, then run it through the same quality gate.</small>
+          <small>Paste your article, optionally add an image, then run it through the same quality gate.</small>
         </span>
       </label>
     </div>
@@ -76,7 +76,7 @@
       </label>
     </div>
 
-    <div class="section-title">2. Hero image</div>
+    <div class="section-title">2. Hero image <small>optional</small></div>
     <div class="paste-image" id="paste-image" tabindex="0">
       <strong>Paste an image here</strong>
       <span>Ctrl+V / Cmd+V, drag a file in, or choose a file below.</span>
@@ -90,9 +90,9 @@
         <input name="image" id="image-url" placeholder="https://dollacasino.com/img/guides/…">
       </label>
     </div>
-    <label>Image alt text
+    <label>Image alt text <small>required when an image is attached</small>
       <input name="alt" placeholder="Describe what the image actually shows">
-      <small>The quality gate requires real alt text before publishing.</small>
+      <small>You can publish without an image. If you add one, the quality gate requires real alt text.</small>
     </label>
 
     <div class="section-title manual-only">3. Your article</div>

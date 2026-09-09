@@ -17,7 +17,7 @@ Then open `http://127.0.0.1:5000`.
 - **Dashboard** — today's ramp cap, queued/draft/live counts, system status, upcoming queue, live guides.
 - **Generate with Gemini** — fill the brief and let the existing engine generate + repair the draft.
 - **My own article** — paste your own Markdown/article text and send it through the exact same quality and claims gate.
-- **Paste images** — paste an image from the clipboard with Ctrl+V/Cmd+V, drag/drop one, choose a file, or use an image URL. Uploaded images are saved under `static/img/guides/` in the content repo.
+- **Optional images** — publish without an image, or paste one from the clipboard, drag/drop one, choose a file, or use an image URL. Attached images require alt text and uploads are saved under `static/img/guides/` in the content repo.
 - **Editable review** — edit title, meta, H1, body, image, market and other Brief fields, then re-run the quality gate.
 - **Queue & Push** — assigns the next valid ramp slot, commits the queue (and its local image when needed), and pushes to GitHub so the scheduled publisher can see it.
 - **Publish & Push** — one click from a passing review: queue → existing `run_publish()` → stage content-owned output → commit → `git push`. Cloudflare then deploys from the content repo push.
