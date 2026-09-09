@@ -49,7 +49,30 @@
               {% for m in ['US','UK','CA','AU'] %}<option {{ 'selected' if brief.target_market == m else '' }}>{{ m }}</option>{% endfor %}
             </select>
           </label>
-          <label>Game slug<input name="game" value="{{ brief.game }}"></label>
+          <label>Link article to
+            <select name="game" id="game-destination">
+              <option value="" {{ 'selected' if not brief.game else '' }}>Dolla homepage / general</option>
+              <option value="voidrun" {{ 'selected' if brief.game == 'voidrun' else '' }}>VOID Run</option>
+              <option value="crash" {{ 'selected' if brief.game == 'crash' else '' }}>Crash</option>
+              <option value="plinko" {{ 'selected' if brief.game == 'plinko' else '' }}>Plinko</option>
+              <option value="mines" {{ 'selected' if brief.game == 'mines' else '' }}>Mines</option>
+              <option value="dice" {{ 'selected' if brief.game == 'dice' else '' }}>Dice</option>
+              <option value="limbo" {{ 'selected' if brief.game == 'limbo' else '' }}>Limbo</option>
+              <option value="keno" {{ 'selected' if brief.game == 'keno' else '' }}>Keno</option>
+              <option value="hilo" {{ 'selected' if brief.game == 'hilo' else '' }}>Hi/Lo</option>
+              <option value="slots" {{ 'selected' if brief.game == 'slots' else '' }}>Slots</option>
+              <option value="blackjack" {{ 'selected' if brief.game == 'blackjack' else '' }}>Blackjack</option>
+              <option value="roulette" {{ 'selected' if brief.game == 'roulette' else '' }}>Roulette</option>
+              <option value="olympus" {{ 'selected' if brief.game == 'olympus' else '' }}>Gods of Olympus</option>
+              <option value="inferno" {{ 'selected' if brief.game == 'inferno' else '' }}>Inferno Vault</option>
+              <option value="bigscore" {{ 'selected' if brief.game == 'bigscore' else '' }}>The Big Score</option>
+              <option value="chariot" {{ 'selected' if brief.game == 'chariot' else '' }}>Chariot Race</option>
+              <option value="penalty" {{ 'selected' if brief.game == 'penalty' else '' }}>Penalty Shooter</option>
+              <option value="lucky7" {{ 'selected' if brief.game == 'lucky7' else '' }}>Lucky 7</option>
+              <option value="dond" {{ 'selected' if brief.game == 'dond' else '' }}>Deal or No Deal</option>
+            </select>
+            <small>This controls the Dolla CTA/link on the published article.</small>
+          </label>
           <label>Publish date<input type="date" name="publish_date" value="{{ brief.publish_date }}"></label>
         </div>
         <div class="grid two">
