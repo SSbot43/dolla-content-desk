@@ -1,7 +1,8 @@
 """Dolla Content Desk — local UI over the existing dolla_content engine.
 
-The engine remains the source of truth for generation, quality, claims, rendering, ramping and
-publishing. This app only provides a friendlier workflow around those calls.
+The engine remains the source of truth for article generation, quality, claims, rendering, ramping
+and publishing. This app adds a friendly headline-first workflow, trend discovery, image handling,
+review, and one-click Git publishing around those calls.
 """
 
 from __future__ import annotations
@@ -11,7 +12,13 @@ import os
 import re
 import subprocess
 import sys
+import time
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import date, timedelta
+from difflib import SequenceMatcher
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -44,8 +51,48 @@ QUEUE_FALLBACK = CONTENT_REPO / "content" / "queue.sample.json"
 PUBLISHED = CONTENT_REPO / "content" / "published.json"
 GUIDE_IMAGE_DIR = CONTENT_REPO / "static" / "img" / "guides"
 SITE_BASE = os.environ.get("SITE_BASE", "https://dollacasino.com").rstrip("/")
+APP_BASE = os.environ.get("APP_BASE", "https://dolla.fo").rstrip("/")
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif", "svg"}
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
+DESTINATIONS = [
+    {"slug": "", "label": "Dolla homepage / general"},
+    {"slug": "plinko", "label": "Plinko"},
+    {"slug": "mines", "label": "Mines"},
+    {"slug": "crash", "label": "Crash"},
+    {"slug": "voidrun", "label": "VOID Run"},
+    {"slug": "dice", "label": "Dice"},
+    {"slug": "limbo", "label": "Limbo"},
+    {"slug": "keno", "label": "Keno"},
+    {"slug": "hilo", "label": "Hi/Lo"},
+    {"slug": "slots", "label": "Slots"},
+    {"slug": "blackjack", "label": "Blackjack"},
+    {"slug": "roulette", "label": "Roulette"},
+    {"slug": "olympus", "label": "Gods of Olympus"},
+    {"slug": "inferno", "label": "Inferno Vault"},
+    {"slug": "bigscore", "label": "The Big Score"},
+    {"slug": "chariot", "label": "Chariot Race"},
+    {"slug": "penalty", "label": "Penalty Shooter"},
+    {"slug": "lucky7", "label": "Lucky 7"},
+    {"slug": "dond", "label": "Deal or No Deal"},
+]
+
+TREND_FEEDS = [
+    (
+        "Game trends & releases",
+        '(casino game OR slot OR crash game OR blackjack OR roulette OR plinko) when:7d',
+    ),
+    (
+        "Crypto casino & player UX",
+        '("crypto casino" OR "crypto gambling" OR casino withdrawal OR casino deposit) when:7d',
+    ),
+    (
+        "Player questions & market themes",
+        '("online casino" OR "casino games") (demo OR no-KYC OR mobile OR crypto) when:7d',
+    ),
+]
+_TREND_CACHE: dict[str, object] = {"at": 0.0, "ideas": [], "error": None}
+TREND_CACHE_SECONDS = 15 * 60
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
@@ -102,6 +149,10 @@ def slugify(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")[:90]
 
 
+def destination_label(slug: str) -> str:
+    return next((d["label"] for d in DESTINATIONS if d["slug"] == slug), slug or "Dolla")
+
+
 def brief_from_form(f) -> Brief:
     title = f.get("title", "").strip()
     slug = f.get("slug", "").strip() or slugify(title or f.get("keyword", ""))
@@ -121,6 +172,98 @@ def brief_from_form(f) -> Brief:
         intent=f.get("intent", "informational").strip(),
         why_dolla=f.get("why", "").strip(),
     )
+
+
+def _clean_json_object(text: str) -> dict:
+    text = (text or "").strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.I)
+    text = re.sub(r"\s*```$", "", text)
+    start, end = text.find("{"), text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError("Gemini did not return a JSON object")
+    return json.loads(text[start:end + 1])
+
+
+def _fallback_meta(title: str, game: str) -> str:
+    subject = destination_label(game)
+    text = (
+        f"{title}. A practical Dolla guide to {subject}, free-play practice, crypto basics "
+        "and the key things players should check before real play."
+    )
+    if len(text) < 110:
+        text += " Includes clear controls, safety checks and responsible-play context."
+    return text[:155].rstrip(" ,;:-")
+
+
+def complete_headline_brief(brief: Brief, trend_context: str = "") -> Brief:
+    """Fill optional SEO brief fields for headline-first mode without changing the engine."""
+    brief.h1 = brief.h1 or brief.title
+    brief.intent = brief.intent or "informational"
+    game_label = destination_label(brief.game)
+
+    missing = not all([brief.primary_keyword, brief.meta_description, brief.angle, brief.why_dolla])
+    if missing and os.environ.get("GEMINI_API_KEY", "").strip():
+        try:
+            from google import genai as google_genai
+
+            context_line = (
+                f"\nTrend inspiration: {trend_context}\n"
+                "Treat it only as inspiration. Do not invent or repeat third-party numbers, wins, "
+                "testimonials, release facts, or claims that are not independently present in the Dolla brief."
+                if trend_context else ""
+            )
+            prompt = f"""Complete a compact SEO brief for an article on Dolla's editorial site.
+The user supplied the headline, so DO NOT rewrite it.
+
+Headline: {brief.title}
+Target market: {brief.target_market}
+Destination: {game_label}
+Destination slug: {brief.game or 'homepage'}{context_line}
+
+Return ONLY JSON with these keys:
+primary_keyword: one natural search phrase, 2-6 words
+meta_description: 120-150 characters, useful and factual, no hype or guarantees
+angle: one short editorial angle
+why_dolla: one short reason this topic can naturally reference Dolla
+
+Allowed Dolla facts only:
+- every public game has no-deposit demo/free-play
+- demo credits are practice-only and cannot be withdrawn
+- standard player flow does not require KYC
+- eligible withdrawals are normally reviewed and approved within 5-10 minutes
+- players should verify asset, network and wallet address before crypto transfers
+
+Never mention RTP, house edge, odds, EV, symbol weights, guaranteed winnings, risk-free play,
+provably-fair claims, invented player counts, testimonials, or guaranteed/instant withdrawals.
+"""
+            client = google_genai.Client(api_key=os.environ["GEMINI_API_KEY"].strip())
+            model = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
+            resp = client.models.generate_content(model=model, contents=prompt)
+            data = _clean_json_object(getattr(resp, "text", "") or "")
+            brief.primary_keyword = brief.primary_keyword or str(data.get("primary_keyword", "")).strip()
+            brief.meta_description = brief.meta_description or str(data.get("meta_description", "")).strip()
+            brief.angle = brief.angle or str(data.get("angle", "")).strip()
+            brief.why_dolla = brief.why_dolla or str(data.get("why_dolla", "")).strip()
+        except Exception:
+            # Article generation still uses the engine's own retry/fallback path.
+            pass
+
+    brief.primary_keyword = brief.primary_keyword or re.sub(
+        r"\b(the|a|an|and|or|of|to|for|in|on|with|why|how|what|is|are)\b",
+        " ",
+        brief.title.lower(),
+    )
+    brief.primary_keyword = re.sub(r"\s+", " ", brief.primary_keyword).strip()[:70] or brief.title[:70]
+    brief.meta_description = brief.meta_description or _fallback_meta(brief.title, brief.game)
+    brief.angle = brief.angle or (
+        "clear first-party explainer tied naturally to Dolla; avoid unverified third-party claims"
+    )
+    brief.why_dolla = brief.why_dolla or (
+        f"Dolla offers free-play demos and a direct {game_label} experience."
+        if brief.game else
+        "Dolla offers free-play demos, crypto play and a standard no-KYC flow."
+    )
+    return brief
 
 
 def save_image_bytes(data: bytes, filename: str, slug_hint: str = "guide") -> str:
@@ -248,6 +391,139 @@ def show_review(brief: Brief, error: str | None = None, notice: str | None = Non
     )
 
 
+def _normalize_title(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def _too_similar_to_existing(title: str, existing: list[str]) -> bool:
+    mine = _normalize_title(title)
+    return any(SequenceMatcher(None, mine, _normalize_title(other)).ratio() >= 0.78 for other in existing)
+
+
+def _guess_destination(text: str) -> str:
+    t = text.lower()
+    checks = [
+        (("void run", "crash game", "crash gambling", "crash casino"), "crash"),
+        (("plinko",), "plinko"),
+        (("mines", "mine game"), "mines"),
+        (("blackjack",), "blackjack"),
+        (("roulette",), "roulette"),
+        (("keno",), "keno"),
+        (("limbo",), "limbo"),
+        (("dice",), "dice"),
+        (("slot", "slots"), "slots"),
+        (("higher lower", "hi lo", "hilo"), "hilo"),
+    ]
+    for needles, slug in checks:
+        if any(n in t for n in needles):
+            return slug
+    return ""
+
+
+def _safe_trend_headline(source_title: str, category: str) -> str:
+    t = source_title.lower()
+    if "crash" in t:
+        return "Why Crash Games Keep Getting Attention From Online Casino Players"
+    if "plinko" in t:
+        return "Why Plinko Remains One of the Easiest Casino Games to Learn"
+    if "slot" in t:
+        return "What New Slot Releases Say About Where Online Casino Games Are Heading"
+    if "blackjack" in t:
+        return "Why Blackjack Keeps Getting New Digital Variations"
+    if "roulette" in t:
+        return "Why Roulette Still Works So Well as a Digital Casino Game"
+    if "no kyc" in t or "no-kyc" in t:
+        return "What No-KYC Casino Players Should Check Before They Play"
+    if "withdraw" in t or "cashout" in t or "cash out" in t:
+        return "What Crypto Casino Players Should Check Before Requesting a Withdrawal"
+    if "deposit" in t or "wallet" in t or "bitcoin" in t or "crypto" in t:
+        return "What Crypto Casino Players Should Check Before Depositing or Playing"
+    if "demo" in t or "free play" in t or "free-play" in t:
+        return "Why Free-Play Casino Demos Matter Before Real-Money Play"
+    if "mobile" in t:
+        return "What Makes a Casino Game Work Well on Mobile"
+    if category == "Game trends & releases":
+        return "What Is Changing in Online Casino Games Right Now"
+    if category == "Crypto casino & player UX":
+        return "What Crypto Casino Players Care About Most Right Now"
+    return "What Online Casino Players Are Paying Attention to Right Now"
+
+
+def _fetch_google_news(query: str, category: str, limit: int = 6) -> list[dict]:
+    url = (
+        "https://news.google.com/rss/search?q="
+        + urllib.parse.quote(query)
+        + "&hl=en-US&gl=US&ceid=US:en"
+    )
+    req = urllib.request.Request(url, headers={"User-Agent": "DollaContentDesk/1.0"})
+    with urllib.request.urlopen(req, timeout=7) as response:
+        xml_data = response.read()
+    root = ET.fromstring(xml_data)
+    rows: list[dict] = []
+    for item in root.findall(".//item")[:limit]:
+        title = (item.findtext("title") or "").strip()
+        link = (item.findtext("link") or "").strip()
+        source = (item.findtext("source") or "").strip()
+        raw_date = (item.findtext("pubDate") or "").strip()
+        published = raw_date
+        if raw_date:
+            try:
+                published = parsedate_to_datetime(raw_date).date().isoformat()
+            except Exception:
+                pass
+        if not title or not link:
+            continue
+        rows.append(
+            {
+                "category": category,
+                "source_title": title,
+                "source": source or "Google News",
+                "source_url": link,
+                "published": published,
+                "headline": _safe_trend_headline(title, category),
+                "game": _guess_destination(title),
+            }
+        )
+    return rows
+
+
+def load_trend_ideas(force: bool = False) -> tuple[list[dict], str | None]:
+    now = time.time()
+    cached_at = float(_TREND_CACHE.get("at", 0.0) or 0.0)
+    if not force and now - cached_at < TREND_CACHE_SECONDS:
+        return list(_TREND_CACHE.get("ideas", [])), _TREND_CACHE.get("error")  # type: ignore[arg-type]
+
+    ideas: list[dict] = []
+    errors: list[str] = []
+    existing_titles = [
+        str(v.get("title", ""))
+        for v in load_published().values()
+        if v.get("title")
+    ] + [b.title for b in load_queue() if b.title]
+
+    seen_headlines: set[str] = set()
+    for category, query in TREND_FEEDS:
+        try:
+            rows = _fetch_google_news(query, category)
+        except Exception as exc:
+            errors.append(f"{category}: {exc}")
+            continue
+        for row in rows:
+            headline_key = _normalize_title(row["headline"])
+            if headline_key in seen_headlines:
+                continue
+            if _too_similar_to_existing(row["headline"], existing_titles):
+                continue
+            seen_headlines.add(headline_key)
+            ideas.append(row)
+            if len([i for i in ideas if i["category"] == category]) >= 4:
+                break
+
+    error = "; ".join(errors) if errors and not ideas else None
+    _TREND_CACHE.update({"at": now, "ideas": ideas, "error": error})
+    return ideas, error
+
+
 @app.route("/")
 def dashboard():
     queue = load_queue()
@@ -270,10 +546,32 @@ def dashboard():
     )
 
 
+@app.route("/ideas")
+def ideas():
+    force = request.args.get("refresh") == "1"
+    trend_ideas, trend_error = load_trend_ideas(force=force)
+    grouped = []
+    for category, _ in TREND_FEEDS:
+        grouped.append((category, [i for i in trend_ideas if i["category"] == category]))
+    return render_template(
+        "ideas.html",
+        grouped=grouped,
+        error=trend_error,
+        destinations=DESTINATIONS,
+    )
+
+
 @app.route("/feed", methods=["GET", "POST"])
 def feed():
     if request.method == "GET":
-        return render_template("feed.html")
+        prefill = {
+            "mode": request.args.get("mode", "generate"),
+            "title": request.args.get("title", ""),
+            "game": request.args.get("game", ""),
+            "market": request.args.get("market", "US"),
+            "trend_context": request.args.get("trend_context", ""),
+        }
+        return render_template("feed.html", destinations=DESTINATIONS, prefill=prefill)
 
     brief = brief_from_form(request.form)
     try:
@@ -284,9 +582,12 @@ def feed():
     error = None
     if request.form.get("mode") == "generate" and not brief.body_md:
         try:
+            brief = complete_headline_brief(brief, request.form.get("trend_context", "").strip())
             brief, _ = gen.generate(brief, published_bodies=comparison_bodies(brief.slug))
         except gen.GenerationError as exc:
             error = str(exc)
+        except Exception as exc:
+            error = f"Could not prepare the Gemini brief: {exc}"
     return show_review(brief, error=error)
 
 
@@ -345,7 +646,11 @@ def upload_image():
         return jsonify({"ok": False, "error": "No image received"}), 400
     try:
         data = upload.read(MAX_IMAGE_BYTES + 1)
-        url = save_image_bytes(data, upload.filename or "pasted-image.png", request.form.get("slug", "guide"))
+        url = save_image_bytes(
+            data,
+            upload.filename or "pasted-image.png",
+            request.form.get("slug", "guide"),
+        )
     except ValueError as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
     return jsonify({"ok": True, "url": url})
