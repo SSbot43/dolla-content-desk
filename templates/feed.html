@@ -25,8 +25,8 @@
       <label class="mode-choice">
         <input type="radio" name="mode" value="generate" {{ 'checked' if prefill.mode != 'paste' else '' }}>
         <span>
-          <strong>Give Gemini a headline</strong>
-          <small>You choose the topic and Dolla destination. Gemini fills the SEO brief and writes the article.</small>
+          <strong>Give Gemini a topic</strong>
+          <small>Give it a short headline or topic plus notes. Gemini fills the SEO brief and writes the article.</small>
         </span>
       </label>
       <label class="mode-choice">
@@ -42,17 +42,21 @@
     <div class="trend-prefill">
       <strong>Started from a current trend</strong>
       <span>{{ prefill.trend_context }}</span>
-      <small>Gemini uses this only as inspiration; unverified third-party claims and numbers are not carried into the article.</small>
+      <small>Gemini uses this as writing context; unverified third-party claims and numbers are not carried into the article.</small>
     </div>
     {% endif %}
-    <input type="hidden" name="trend_context" value="{{ prefill.trend_context }}">
 
     <div class="section-title">1. What should the article be about?</div>
-    <label class="headline-field">Headline *
+    <label class="headline-field">Topic or headline *
       <input name="title" id="title" required value="{{ prefill.title }}"
-             placeholder="Why Crash Games Are Getting More Popular With Online Casino Players">
-      <small class="generate-only">This is the main thing you need to provide. Gemini handles the article, H1, keyword, meta and angle.</small>
+             placeholder="The Boom of Crash Gambling">
+      <small class="generate-only">You can paste a short title OR something like “The Boom of Crash Gambling: crash games are one of the hottest genres right now.” If you use title + explanation, the desk separates them automatically.</small>
     </label>
+
+    <label class="generate-only">Extra context / notes <small>optional</small>
+      <textarea name="trend_context" id="trend-context" rows="3" placeholder="Anything Gemini should know about the angle, trend, source idea or Dolla game connection.">{{ prefill.trend_context }}</textarea>
+    </label>
+    <input class="manual-only" type="hidden" name="trend_context_manual" value="{{ prefill.trend_context }}">
 
     <div class="grid two">
       <label>Link the article to
@@ -103,7 +107,7 @@
         <p class="muted generate-only">Leave these blank in Gemini mode unless you specifically want to override the automatic brief.</p>
         <div class="grid two">
           <label>Primary keyword
-            <input name="keyword" placeholder="auto-filled from the headline">
+            <input name="keyword" placeholder="auto-filled from the topic">
           </label>
           <label>Slug
             <input name="slug" id="slug" placeholder="auto-created from the headline">
