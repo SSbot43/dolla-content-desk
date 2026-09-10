@@ -2,7 +2,8 @@
 
 Normal approved articles are auto-slotted by the ramp. A manual immediate publish is an explicit
 editorial override: it still must pass the quality gate, but it does not consume or wait for the
-normal daily ramp cap.
+normal daily ramp cap. A separate manual queue override lets a human editor accept a known false
+positive from the quality gate while keeping the gate visible and strict by default.
 """
 from __future__ import annotations
 
@@ -10,7 +11,7 @@ from datetime import date
 
 
 def install(desk) -> None:
-    """Install auto-slot queue behavior and the /publish-now route onto the existing Flask app."""
+    """Install auto-slot queue behavior plus manual override/publish routes."""
 
     def auto_queue_brief(brief):
         # Dates are an engine concern, not an editor concern. Recalculate the next free ramp slot
@@ -24,6 +25,23 @@ def install(desk) -> None:
     # Existing /queue-local route resolves this module global at request time, so replacing it here
     # upgrades the policy without duplicating the route or forking app.py.
     desk.queue_brief = auto_queue_brief
+
+    @desk.app.route("/queue-override", methods=["POST"])
+    def queue_override():
+        """Queue a personally-reviewed article despite a blocking quality-gate result."""
+        import json
+        from flask import request
+
+        brief = desk.Brief.from_dict(json.loads(request.form["brief_json"]))
+        brief.gate_override = True
+        brief = auto_queue_brief(brief)
+        return desk.show_review(
+            brief,
+            notice=(
+                "Queued with a manual editorial override. The quality-gate warning is recorded, "
+                "and the scheduled publisher will allow this article through the FIFO queue."
+            ),
+        )
 
     @desk.app.route("/publish-now", methods=["POST"])
     def publish_now():
