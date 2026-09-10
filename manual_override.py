@@ -1,34 +1,53 @@
 """Reviewed-article queue routes for Dolla Content Desk.
 
-A human review action should be the final editorial step. Normal PASS articles and explicit manual
-overrides are queued locally and pushed to GitHub immediately so there is no separate dashboard
-"push queued" step for individually reviewed drafts.
+A human review action should be the final editorial step. PASS articles and explicit manual
+overrides are saved to the local publishing queue immediately, the review UI returns at once,
+and GitHub synchronisation continues in a background worker. This keeps editorial review fast
+without dropping the remote queue sync.
 """
 from __future__ import annotations
 
 import json
+import threading
+import time
 
 from flask import request
+
+
+_PUSH_LOCK = threading.Lock()
 
 
 def install(desk) -> None:
     app = desk.app
 
-    def _queue_and_push(brief, notice: str):
-        brief = desk.queue_brief(brief)
-        try:
-            desk.push_queue(brief)
-        except Exception as exc:
-            return desk.show_review(
-                brief,
-                error=(
-                    "Article is safely queued on this PC, but GitHub push failed: " + str(exc)
-                ),
+    def _background_push(brief) -> None:
+        """Serialize Git pushes and retry transient failures without blocking the review UI."""
+        with _PUSH_LOCK:
+            last_error = None
+            for attempt in range(3):
+                try:
+                    desk.push_queue(brief)
+                    print(f"[Content Desk] GitHub queue sync complete: {brief.slug}", flush=True)
+                    return
+                except Exception as exc:
+                    last_error = exc
+                    if attempt < 2:
+                        time.sleep(2 + attempt * 2)
+            print(
+                f"[Content Desk] WARNING: article remains safely queued locally but GitHub sync "
+                f"failed for {brief.slug}: {last_error}",
+                flush=True,
             )
+
+    def _queue_now_sync_later(brief, notice: str):
+        # Saving locally is the user-visible completion point. Once this succeeds the review tab
+        # can close immediately; the slower fetch/merge/push is deliberately off the request path.
+        brief = desk.queue_brief(brief)
+        threading.Thread(target=_background_push, args=(brief,), daemon=True).start()
         return desk.show_review(brief, notice=notice)
 
     # Register each route independently. Older local sessions could already have one route
-    # but not the other; a single early-return here caused BuildError for queue_reviewed.
+    # but not the other; a single early-return here previously caused BuildError.
     if "queue_reviewed" not in app.view_functions:
         @app.route("/queue-reviewed", methods=["POST"], endpoint="queue_reviewed")
         def queue_reviewed():
@@ -40,9 +59,9 @@ def install(desk) -> None:
                     error="Still blocked — use the manual override only if you have personally reviewed the article.",
                 )
             brief = result.fixed_brief or brief
-            return _queue_and_push(
+            return _queue_now_sync_later(
                 brief,
-                "Approved, queued and pushed to GitHub. Returning to the batch review list.",
+                "Approved and queued. GitHub sync is running in the background. Returning to the batch review list.",
             )
 
     if "queue_override" not in app.view_functions:
@@ -50,7 +69,7 @@ def install(desk) -> None:
         def queue_override():
             brief = desk.Brief.from_dict(json.loads(request.form["brief_json"]))
             brief.gate_override = True
-            return _queue_and_push(
+            return _queue_now_sync_later(
                 brief,
-                "Queued with a manual editorial override and pushed to GitHub. Returning to the batch review list.",
+                "Queued with a manual editorial override. GitHub sync is running in the background. Returning to the batch review list.",
             )
