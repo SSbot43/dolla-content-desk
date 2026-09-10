@@ -19,15 +19,20 @@
   {% if error %}<div class="banner bad"><strong>Needs attention</strong><span>{{ error }}</span></div>{% endif %}
   {% if notice %}<div class="banner ok"><strong>Success</strong><span>{{ notice }}</span></div>{% endif %}
 
+  {% set queued_now = brief.status == 'queued' %}
   <section class="review-head">
     <div>
       <div class="eyebrow">{{ brief.target_market }} · {{ brief.primary_keyword or 'manual article' }}</div>
       <h2>{{ brief.title or brief.slug }}</h2>
       <div class="muted">/guides/{{ brief.slug }}</div>
     </div>
-    <div class="verdict {{ 'ok' if result.ok else 'bad' }}">
+    <div class="verdict {{ 'ok' if (result.ok or queued_now) else 'bad' }}">
       <span class="dot"></span>
-      {{ 'PASS — ready to queue or publish' if result.ok else 'BLOCKED — fix the red issues or override manually' }}
+      {% if queued_now %}
+        QUEUED — saved to publishing queue
+      {% else %}
+        {{ 'PASS — ready to queue or publish' if result.ok else 'BLOCKED — fix the red issues or override manually' }}
+      {% endif %}
     </div>
   </section>
 
@@ -87,7 +92,7 @@
 
         <div class="paste-image small" id="paste-image" tabindex="0">
           <strong>Paste or drop an optional replacement image</strong>
-          <span>Ctrl+V / Cmd+V works anywhere on this page.</span>
+          <span>Ctrl+V / Cmd-V works anywhere on this page.</span>
           <div class="upload-status" id="upload-status">{{ brief.image or 'No image attached.' }}</div>
         </div>
         <div class="grid two">
@@ -124,11 +129,12 @@
       <div class="publish-box">
         <div>
           <strong>Ready?</strong>
-          <p><b>Queue for schedule</b> uses the normal FIFO publishing ramp. <b>Publish immediately</b> is only for breaking/time-sensitive stories. If the gate is wrong but you have personally reviewed the article, <b>Queue anyway</b> records a manual editorial override and lets the scheduled publisher accept it.</p>
+          <p><b>Queue for schedule</b> uses the normal FIFO publishing ramp and now pushes the reviewed article to GitHub immediately. <b>Publish immediately</b> is only for breaking/time-sensitive stories. If the gate is wrong but you have personally reviewed the article, <b>Queue anyway</b> records a manual editorial override.</p>
         </div>
-        <form method="post" action="{{ url_for('queue_local') }}">
+        {% if not queued_now %}
+        <form method="post" action="{{ url_for('queue_reviewed') }}">
           <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
-          <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Queue for schedule</button>
+          <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Approve & queue</button>
         </form>
         {% if not result.ok %}
         <form method="post" action="{{ url_for('queue_override') }}" id="override-queue-form">
@@ -140,6 +146,9 @@
           <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
           <button class="btn primary full" type="submit" {{ '' if result.ok else 'disabled' }} onclick="return confirm('Publish this article immediately outside the normal ramp schedule?')">Publish immediately</button>
         </form>
+        {% else %}
+        <div class="empty-good">Queued successfully. Returning to the batch list…</div>
+        {% endif %}
       </div>
     </aside>
   </div>
@@ -161,15 +170,19 @@
     const queued = {{ 'true' if brief.status == 'queued' else 'false' }};
     let drafts = JSON.parse(window.opener.localStorage.getItem(STORE) || '[]');
     const idx = drafts.findIndex(d => (d.slug || '') === slug);
-    if (idx < 0) return;
 
     if (queued) {
-      drafts.splice(idx, 1);
-      window.opener.localStorage.setItem(STORE, JSON.stringify(drafts));
+      if (idx >= 0) {
+        drafts.splice(idx, 1);
+        window.opener.localStorage.setItem(STORE, JSON.stringify(drafts));
+      }
       window.opener.location.reload();
+      window.opener.focus();
+      setTimeout(() => window.close(), 250);
       return;
     }
 
+    if (idx < 0) return;
     drafts[idx].gateOk = gateOk;
     if (!gateOk) drafts[idx].approved = false;
     drafts[idx].html = '<!doctype html>\n' + document.documentElement.outerHTML;
