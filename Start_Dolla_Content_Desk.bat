@@ -26,11 +26,25 @@ if errorlevel 1 goto :gitfail
 git reset --hard origin/main
 if errorlevel 1 goto :gitfail
 
-REM Content repo can legitimately be dirty while articles/images are being queued.
-REM A failed ff-only pull must never prevent the desk from starting.
-if exist "%ENGINE_DIR%\.git" (
+REM Home/secondary PCs may have only the desk repo from the old ZIP. Self-heal by cloning
+REM the content engine beside it when missing.
+if not exist "%ENGINE_DIR%\.git" (
+  echo Content engine not found. Downloading it now...
+  git clone https://github.com/SSbot43/dollacasino-content.git "%ENGINE_DIR%"
+  if errorlevel 1 goto :enginefail
+) else (
+  REM Content repo can legitimately be dirty while articles/images are being queued.
+  REM A failed ff-only pull must never prevent the desk from starting.
   echo Checking content engine updates...
   git -C "%ENGINE_DIR%" pull --ff-only origin main >nul 2>&1
+)
+
+REM Ensure Python dependencies are present on a fresh PC. Keep output quiet unless install fails.
+if exist "%DESK_DIR%requirements.txt" (
+  py -X utf8 -m pip install -r "%DESK_DIR%requirements.txt" >nul 2>&1
+)
+if exist "%ENGINE_DIR%\requirements.txt" (
+  py -X utf8 -m pip install -r "%ENGINE_DIR%\requirements.txt" >nul 2>&1
 )
 
 set "CONTENT_REPO=%ENGINE_DIR%"
@@ -47,6 +61,14 @@ goto :eof
 echo.
 echo ERROR: Could not update Content Desk from GitHub.
 echo The app was NOT started with stale code.
+echo.
+pause
+exit /b 1
+
+:enginefail
+echo.
+echo ERROR: Could not download the dollacasino-content engine repo.
+echo Check GitHub sign-in / internet access, then run this BAT again.
 echo.
 pause
 exit /b 1
