@@ -73,7 +73,11 @@
             </select>
             <small>This controls the Dolla CTA/link on the published article.</small>
           </label>
-          <label>Publish date<input type="date" name="publish_date" value="{{ brief.publish_date }}"></label>
+          <label>Schedule
+            <input value="Automatic — next free ramp slot" disabled>
+            <input type="hidden" name="publish_date" value="">
+            <small>No date picking needed. Queue assigns the next safe slot automatically.</small>
+          </label>
         </div>
         <div class="grid two">
           <label>Angle<input name="angle" value="{{ brief.angle }}"></label>
@@ -120,15 +124,15 @@
       <div class="publish-box">
         <div>
           <strong>Ready?</strong>
-          <p><b>Queue for later</b> saves this approved article locally without a Git push. Approve as many as you want, then use <b>Push all queued</b> once from the dashboard. <b>Publish & Push</b> still publishes immediately when the schedule allows.</p>
+          <p><b>Queue for schedule</b> ignores manual dates and assigns the next free slot under the 180-day ramp. Use <b>Publish immediately</b> only for breaking/time-sensitive stories; it bypasses the daily ramp cap but still requires a clean quality gate.</p>
         </div>
         <form method="post" action="{{ url_for('queue_local') }}">
           <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
-          <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Queue for later</button>
+          <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Queue for schedule</button>
         </form>
-        <form method="post" action="{{ url_for('publish_push') }}">
+        <form method="post" action="/publish-now">
           <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
-          <button class="btn primary full" type="submit" {{ '' if result.ok else 'disabled' }}>Publish & Push</button>
+          <button class="btn primary full" type="submit" {{ '' if result.ok else 'disabled' }} onclick="return confirm('Publish this article immediately outside the normal ramp schedule?')">Publish immediately</button>
         </form>
       </div>
     </aside>
