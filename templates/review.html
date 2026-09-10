@@ -74,9 +74,9 @@
             <small>This controls the Dolla CTA/link on the published article.</small>
           </label>
           <label>Schedule
-            <input value="Automatic — next free ramp slot" disabled>
+            <input value="Automatic — FIFO queue" disabled>
             <input type="hidden" name="publish_date" value="">
-            <small>No date picking needed. Queue assigns the next safe slot automatically.</small>
+            <small>No date picking needed. Queue order controls normal publishing.</small>
           </label>
         </div>
         <div class="grid two">
@@ -131,9 +131,9 @@
           <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Queue for schedule</button>
         </form>
         {% if not result.ok %}
-        <form method="post" action="{{ url_for('queue_local') }}" id="override-queue-form">
-          <input type="hidden" name="brief_json" id="override-brief-json" value="{{ brief.to_dict()|tojson|forceescape }}">
-          <button class="btn secondary full" type="submit">Queue anyway — manual override</button>
+        <form method="post" action="{{ url_for('queue_override') }}" id="override-queue-form">
+          <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
+          <button class="btn secondary full" type="submit" onclick="return confirm('You are overriding the quality gate for an article you personally reviewed. Queue it anyway?')">Queue anyway — manual override</button>
         </form>
         {% endif %}
         <form method="post" action="/publish-now">
@@ -153,29 +153,6 @@
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 <script>
 (() => {
-  const overrideForm = document.getElementById('override-queue-form');
-  if (overrideForm) {
-    overrideForm.addEventListener('submit', (event) => {
-      if (!confirm('You are overriding the quality gate for an article you personally reviewed. Queue it anyway?')) {
-        event.preventDefault();
-        return;
-      }
-      const input = document.getElementById('override-brief-json');
-      try {
-        const brief = JSON.parse(input.value);
-        brief.competition = '__GATE_OVERRIDE__';
-        input.value = JSON.stringify(brief);
-      } catch (err) {
-        event.preventDefault();
-        alert('Could not prepare the manual override.');
-      }
-    });
-  }
-})();
-
-(() => {
-  // Batch reviews are opened in a child window. Keep the parent batch card in sync after a
-  // quality-gate re-run so a newly passing draft can be checked and bulk-queued immediately.
   if (!window.opener || window.opener.closed) return;
   try {
     const STORE = 'dolla_batch_drafts_v2';
