@@ -9,6 +9,7 @@
   <style>
     .queue-open-form{margin:0}.queue-open-link{appearance:none;background:none;border:0;padding:0;margin:0;color:inherit;font:inherit;text-align:left;cursor:pointer}.queue-open-link strong{color:var(--text)}.queue-open-link:hover strong{text-decoration:underline;text-underline-offset:3px}.queue-open-link:hover .small-text{color:var(--gold2)}
     .queue-head-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.queue-head-actions form{margin:0}
+    .sync-note{font-size:11px;color:var(--muted);margin-top:5px}
   </style>
 </head>
 <body>
@@ -38,6 +39,7 @@
       <div class="eyebrow">180-day SEO sprint</div>
       <h2>Topic → Gemini → review → queue or publish.</h2>
       <p>Approve articles locally as you go, then push the whole queue to GitHub once.</p>
+      <div class="sync-note">Dashboard checks for remote scheduled-publish updates automatically and refreshes about once a minute.</div>
     </div>
     <div class="system-pills">
       <span class="pill {{ 'ok' if gemini_ready else 'bad' }}">Gemini {{ 'ready' if gemini_ready else 'missing key' }}</span>
@@ -149,5 +151,17 @@
     </div>
   </section>
 </main>
+<script>
+  // The launcher safely fast-forwards the content repo in the background. Refresh this dashboard
+  // after that sync has had time to land, but never while a form/button interaction is in progress.
+  (() => {
+    let busy = false;
+    document.addEventListener('submit', () => { busy = true; });
+    document.addEventListener('pointerdown', () => { busy = true; setTimeout(() => { busy = false; }, 5000); });
+    setInterval(() => {
+      if (!busy && document.visibilityState === 'visible') window.location.reload();
+    }, 60000);
+  })();
+</script>
 </body>
 </html>
