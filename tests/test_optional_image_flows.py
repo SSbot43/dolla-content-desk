@@ -78,6 +78,9 @@ class OptionalImageFlowTests(unittest.TestCase):
     def test_destination_guesser_separates_void_run_from_generic_crash(self):
         self.assertEqual(desk._guess_destination("The Void Run Phenomenon"), "voidrun")
         self.assertEqual(desk._guess_destination("The Ultimate Crash Cash-Out"), "crash")
+        self.assertEqual(desk._guess_destination("The Big Heist Vault Breaker"), "bigscore")
+        self.assertEqual(desk._guess_destination("The Blazing Inferno Streak"), "inferno")
+        self.assertEqual(desk._guess_destination("The Dolla.fo Olympus Smash"), "olympus")
 
     def test_attached_image_without_alt_still_blocks(self):
         data = form_data("paste")

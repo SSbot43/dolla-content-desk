@@ -405,6 +405,9 @@ def _guess_destination(text: str) -> str:
     checks = [
         (("void run",), "voidrun"),
         (("crash", "crash game", "crash gambling", "crash casino"), "crash"),
+        (("big heist", "vault breaker", "bank heist", "big score"), "bigscore"),
+        (("inferno",), "inferno"),
+        (("olympus", "zeus", "poseidon"), "olympus"),
         (("plinko",), "plinko"),
         (("mines", "mine game"), "mines"),
         (("blackjack",), "blackjack"),
