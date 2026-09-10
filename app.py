@@ -201,7 +201,17 @@ def complete_headline_brief(brief: Brief, trend_context: str = "") -> Brief:
     brief.intent = brief.intent or "informational"
     game_label = destination_label(brief.game)
 
-    missing = not all([brief.primary_keyword, brief.meta_description, brief.angle, brief.why_dolla])
+    # Destination copy is deliberately deterministic. The writer may improve the keyword/angle,
+    # but it must never invent a different Dolla game and hand a contradictory brief to the article
+    # generator (for example, game=voidrun with an Olympus CTA).
+    brief.meta_description = brief.meta_description or _fallback_meta(brief.title, brief.game)
+    brief.why_dolla = brief.why_dolla or (
+        f"Dolla offers a direct {game_label} experience with free-play demo access."
+        if brief.game else
+        "Dolla offers free-play demos, crypto play and a standard no-KYC flow."
+    )
+
+    missing = not all([brief.primary_keyword, brief.angle])
     if missing and os.environ.get("GEMINI_API_KEY", "").strip():
         try:
             from google import genai as google_genai
@@ -222,9 +232,7 @@ Destination slug: {brief.game or 'homepage'}{context_line}
 
 Return ONLY JSON with these keys:
 primary_keyword: one natural search phrase, 2-6 words
-meta_description: 120-150 characters, useful and factual, no hype or guarantees
 angle: one short editorial angle
-why_dolla: one short reason this topic can naturally reference Dolla
 
 Allowed Dolla facts only:
 - every public game has no-deposit demo/free-play
@@ -241,9 +249,7 @@ provably-fair claims, invented player counts, testimonials, or guaranteed/instan
             resp = client.models.generate_content(model=model, contents=prompt)
             data = _clean_json_object(getattr(resp, "text", "") or "")
             brief.primary_keyword = brief.primary_keyword or str(data.get("primary_keyword", "")).strip()
-            brief.meta_description = brief.meta_description or str(data.get("meta_description", "")).strip()
             brief.angle = brief.angle or str(data.get("angle", "")).strip()
-            brief.why_dolla = brief.why_dolla or str(data.get("why_dolla", "")).strip()
         except Exception:
             # Article generation still uses the engine's own retry/fallback path.
             pass
@@ -254,14 +260,8 @@ provably-fair claims, invented player counts, testimonials, or guaranteed/instan
         brief.title.lower(),
     )
     brief.primary_keyword = re.sub(r"\s+", " ", brief.primary_keyword).strip()[:70] or brief.title[:70]
-    brief.meta_description = brief.meta_description or _fallback_meta(brief.title, brief.game)
     brief.angle = brief.angle or (
         "clear first-party explainer tied naturally to Dolla; avoid unverified third-party claims"
-    )
-    brief.why_dolla = brief.why_dolla or (
-        f"Dolla offers free-play demos and a direct {game_label} experience."
-        if brief.game else
-        "Dolla offers free-play demos, crypto play and a standard no-KYC flow."
     )
     return brief
 
@@ -403,7 +403,8 @@ def _too_similar_to_existing(title: str, existing: list[str]) -> bool:
 def _guess_destination(text: str) -> str:
     t = text.lower()
     checks = [
-        (("void run", "crash game", "crash gambling", "crash casino"), "crash"),
+        (("void run",), "voidrun"),
+        (("crash", "crash game", "crash gambling", "crash casino"), "crash"),
         (("plinko",), "plinko"),
         (("mines", "mine game"), "mines"),
         (("blackjack",), "blackjack"),

@@ -66,6 +66,19 @@ class OptionalImageFlowTests(unittest.TestCase):
         self.assertIn("if(r.file)fd.append('image_file',r.file,r.file.name)", source)
         self.assertNotIn("!topicFiles[r]||!(topicAlts[r]||'').trim()", source)
 
+    def test_auto_brief_keeps_selected_destination_consistent(self):
+        brief = desk.Brief(slug="void", title="The Void Run Phenomenon", game="voidrun")
+        with patch.dict(desk.os.environ, {"GEMINI_API_KEY": ""}, clear=False):
+            completed = desk.complete_headline_brief(brief)
+
+        self.assertIn("VOID Run", completed.meta_description)
+        self.assertIn("VOID Run", completed.why_dolla)
+        self.assertNotIn("Olympus", completed.meta_description + completed.why_dolla)
+
+    def test_destination_guesser_separates_void_run_from_generic_crash(self):
+        self.assertEqual(desk._guess_destination("The Void Run Phenomenon"), "voidrun")
+        self.assertEqual(desk._guess_destination("The Ultimate Crash Cash-Out"), "crash")
+
     def test_attached_image_without_alt_still_blocks(self):
         data = form_data("paste")
         data["image"] = "https://example.com/article.webp"
