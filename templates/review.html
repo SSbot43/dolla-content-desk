@@ -145,5 +145,58 @@
 </main>
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>
+<script>
+(() => {
+  // Batch reviews are opened in a child window. Keep the parent batch card in sync after a
+  // quality-gate re-run so a newly passing draft can be checked and bulk-queued immediately.
+  if (!window.opener || window.opener.closed) return;
+  try {
+    const STORE = 'dolla_batch_drafts_v2';
+    const slug = {{ brief.slug|tojson }};
+    const gateOk = {{ 'true' if result.ok else 'false' }};
+    const queued = {{ 'true' if brief.status == 'queued' else 'false' }};
+    let drafts = JSON.parse(window.opener.localStorage.getItem(STORE) || '[]');
+    const idx = drafts.findIndex(d => (d.slug || '') === slug);
+    if (idx < 0) return;
+
+    if (queued) {
+      drafts.splice(idx, 1);
+      window.opener.localStorage.setItem(STORE, JSON.stringify(drafts));
+      window.opener.location.reload();
+      return;
+    }
+
+    drafts[idx].gateOk = gateOk;
+    if (!gateOk) drafts[idx].approved = false;
+    // Save the latest review result, including any edits/autofixes, so bulk queue uses this version.
+    drafts[idx].html = '<!doctype html>\n' + document.documentElement.outerHTML;
+    window.opener.localStorage.setItem(STORE, JSON.stringify(drafts));
+
+    const card = window.opener.document.querySelector(`.open-draft[data-id="${drafts[idx].id}"]`)?.closest('.draft-card');
+    if (card) {
+      const checkbox = card.querySelector('.draft-check');
+      const status = card.querySelector('.draft-status');
+      if (checkbox) {
+        checkbox.disabled = !gateOk;
+        checkbox.title = gateOk ? 'Mark editorially approved' : 'Blocked by quality gate';
+      }
+      if (status) {
+        status.classList.toggle('blocked', !gateOk);
+        status.classList.toggle('approved', Boolean(gateOk && drafts[idx].approved));
+        status.textContent = gateOk ? (drafts[idx].approved ? 'APPROVED ✓' : 'PASS — read & check') : 'BLOCKED — open to fix';
+      }
+    }
+
+    const summary = window.opener.document.getElementById('draft-summary');
+    if (summary) {
+      const passed = drafts.filter(d => d.gateOk).length;
+      const approved = drafts.filter(d => d.gateOk && d.approved).length;
+      summary.textContent = `${drafts.length} draft${drafts.length === 1 ? '' : 's'} · ${passed} PASS · ${approved} checked`;
+    }
+  } catch (err) {
+    console.warn('Could not sync batch review status', err);
+  }
+})();
+</script>
 </body>
 </html>
