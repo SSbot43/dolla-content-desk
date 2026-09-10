@@ -27,7 +27,7 @@
     </div>
     <div class="verdict {{ 'ok' if result.ok else 'bad' }}">
       <span class="dot"></span>
-      {{ 'PASS — ready to queue or publish' if result.ok else 'BLOCKED — fix the red issues' }}
+      {{ 'PASS — ready to queue or publish' if result.ok else 'BLOCKED — fix the red issues or override manually' }}
     </div>
   </section>
 
@@ -124,12 +124,18 @@
       <div class="publish-box">
         <div>
           <strong>Ready?</strong>
-          <p><b>Queue for schedule</b> ignores manual dates and assigns the next free slot under the 180-day ramp. Use <b>Publish immediately</b> only for breaking/time-sensitive stories; it bypasses the daily ramp cap but still requires a clean quality gate.</p>
+          <p><b>Queue for schedule</b> uses the normal FIFO publishing ramp. <b>Publish immediately</b> is only for breaking/time-sensitive stories. If the gate is wrong but you have personally reviewed the article, <b>Queue anyway</b> records a manual editorial override and lets the scheduled publisher accept it.</p>
         </div>
         <form method="post" action="{{ url_for('queue_local') }}">
           <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
           <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Queue for schedule</button>
         </form>
+        {% if not result.ok %}
+        <form method="post" action="{{ url_for('queue_local') }}" id="override-queue-form">
+          <input type="hidden" name="brief_json" id="override-brief-json" value="{{ brief.to_dict()|tojson|forceescape }}">
+          <button class="btn secondary full" type="submit">Queue anyway — manual override</button>
+        </form>
+        {% endif %}
         <form method="post" action="/publish-now">
           <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
           <button class="btn primary full" type="submit" {{ '' if result.ok else 'disabled' }} onclick="return confirm('Publish this article immediately outside the normal ramp schedule?')">Publish immediately</button>
@@ -146,6 +152,27 @@
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 <script>
+(() => {
+  const overrideForm = document.getElementById('override-queue-form');
+  if (overrideForm) {
+    overrideForm.addEventListener('submit', (event) => {
+      if (!confirm('You are overriding the quality gate for an article you personally reviewed. Queue it anyway?')) {
+        event.preventDefault();
+        return;
+      }
+      const input = document.getElementById('override-brief-json');
+      try {
+        const brief = JSON.parse(input.value);
+        brief.competition = '__GATE_OVERRIDE__';
+        input.value = JSON.stringify(brief);
+      } catch (err) {
+        event.preventDefault();
+        alert('Could not prepare the manual override.');
+      }
+    });
+  }
+})();
+
 (() => {
   // Batch reviews are opened in a child window. Keep the parent batch card in sync after a
   // quality-gate re-run so a newly passing draft can be checked and bulk-queued immediately.
@@ -168,7 +195,6 @@
 
     drafts[idx].gateOk = gateOk;
     if (!gateOk) drafts[idx].approved = false;
-    // Save the latest review result, including any edits/autofixes, so bulk queue uses this version.
     drafts[idx].html = '<!doctype html>\n' + document.documentElement.outerHTML;
     window.opener.localStorage.setItem(STORE, JSON.stringify(drafts));
 
