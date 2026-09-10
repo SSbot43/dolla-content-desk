@@ -8,210 +8,55 @@
 </head>
 <body>
 <header>
-  <div>
-    <div class="eyebrow">Dolla Content OS</div>
-    <h1>Review article</h1>
-  </div>
+  <div><div class="eyebrow">Dolla Content OS</div><h1>Review article</h1></div>
   <a class="btn ghost" href="{{ url_for('feed') }}">+ New article</a>
 </header>
-
 <main class="page">
   {% if error %}<div class="banner bad"><strong>Needs attention</strong><span>{{ error }}</span></div>{% endif %}
   {% if notice %}<div class="banner ok"><strong>Success</strong><span>{{ notice }}</span></div>{% endif %}
-
   {% set queued_now = brief.status == 'queued' %}
-  <section class="review-head">
-    <div>
-      <div class="eyebrow">{{ brief.target_market }} · {{ brief.primary_keyword or 'manual article' }}</div>
-      <h2>{{ brief.title or brief.slug }}</h2>
-      <div class="muted">/guides/{{ brief.slug }}</div>
-    </div>
-    <div class="verdict {{ 'ok' if (result.ok or queued_now) else 'bad' }}">
-      <span class="dot"></span>
-      {% if queued_now %}
-        QUEUED — saved to publishing queue
-      {% else %}
-        {{ 'PASS — ready to queue or publish' if result.ok else 'BLOCKED — fix the red issues or override manually' }}
-      {% endif %}
-    </div>
-  </section>
-
+  <section class="review-head"><div><div class="eyebrow">{{ brief.target_market }} · {{ brief.primary_keyword or 'manual article' }}</div><h2>{{ brief.title or brief.slug }}</h2><div class="muted">/guides/{{ brief.slug }}</div></div><div class="verdict {{ 'ok' if (result.ok or queued_now) else 'bad' }}"><span class="dot"></span>{% if queued_now %}QUEUED — saved to publishing queue{% else %}{{ 'PASS — ready to queue or publish' if result.ok else 'BLOCKED — fix the red issues or override manually' }}{% endif %}</div></section>
   <div class="review-grid">
-    <section class="panel">
-      <div class="panel-title">Edit before publishing</div>
-      <form method="post" action="{{ url_for('review') }}" enctype="multipart/form-data" class="editor-card compact" id="article-form">
-        <input type="hidden" name="mode" value="paste">
-        <div class="grid two">
-          <label>Primary keyword<input name="keyword" value="{{ brief.primary_keyword }}"></label>
-          <label>Slug<input name="slug" id="slug" value="{{ brief.slug }}"></label>
-        </div>
-        <label>Title<input name="title" value="{{ brief.title }}" required></label>
-        <label>Meta description<textarea name="meta" rows="3">{{ brief.meta_description }}</textarea></label>
-        <label>H1<input name="h1" value="{{ brief.h1 }}"></label>
-        <div class="grid three">
-          <label>Market
-            <select name="market">
-              {% for m in ['US','UK','CA','AU'] %}<option {{ 'selected' if brief.target_market == m else '' }}>{{ m }}</option>{% endfor %}
-            </select>
-          </label>
-          <label>Link article to
-            <select name="game" id="game-destination">
-              <option value="" {{ 'selected' if not brief.game else '' }}>Dolla homepage / general</option>
-              <option value="voidrun" {{ 'selected' if brief.game == 'voidrun' else '' }}>VOID Run</option>
-              <option value="crash" {{ 'selected' if brief.game == 'crash' else '' }}>Crash</option>
-              <option value="plinko" {{ 'selected' if brief.game == 'plinko' else '' }}>Plinko</option>
-              <option value="mines" {{ 'selected' if brief.game == 'mines' else '' }}>Mines</option>
-              <option value="dice" {{ 'selected' if brief.game == 'dice' else '' }}>Dice</option>
-              <option value="limbo" {{ 'selected' if brief.game == 'limbo' else '' }}>Limbo</option>
-              <option value="keno" {{ 'selected' if brief.game == 'keno' else '' }}>Keno</option>
-              <option value="hilo" {{ 'selected' if brief.game == 'hilo' else '' }}>Hi/Lo</option>
-              <option value="slots" {{ 'selected' if brief.game == 'slots' else '' }}>Slots</option>
-              <option value="blackjack" {{ 'selected' if brief.game == 'blackjack' else '' }}>Blackjack</option>
-              <option value="roulette" {{ 'selected' if brief.game == 'roulette' else '' }}>Roulette</option>
-              <option value="olympus" {{ 'selected' if brief.game == 'olympus' else '' }}>Gods of Olympus</option>
-              <option value="inferno" {{ 'selected' if brief.game == 'inferno' else '' }}>Inferno Vault</option>
-              <option value="bigscore" {{ 'selected' if brief.game == 'bigscore' else '' }}>The Big Score</option>
-              <option value="chariot" {{ 'selected' if brief.game == 'chariot' else '' }}>Chariot Race</option>
-              <option value="penalty" {{ 'selected' if brief.game == 'penalty' else '' }}>Penalty Shooter</option>
-              <option value="lucky7" {{ 'selected' if brief.game == 'lucky7' else '' }}>Lucky 7</option>
-              <option value="dond" {{ 'selected' if brief.game == 'dond' else '' }}>Deal or No Deal</option>
-            </select>
-            <small>This controls the Dolla CTA/link on the published article.</small>
-          </label>
-          <label>Schedule
-            <input value="Automatic — FIFO queue" disabled>
-            <input type="hidden" name="publish_date" value="">
-            <small>No date picking needed. Queue order controls normal publishing.</small>
-          </label>
-        </div>
-        <div class="grid two">
-          <label>Angle<input name="angle" value="{{ brief.angle }}"></label>
-          <label>Intent<input name="intent" value="{{ brief.intent }}"></label>
-        </div>
-        <label>Why Dolla fits<input name="why" value="{{ brief.why_dolla }}"></label>
-
-        <div class="paste-image small" id="paste-image" tabindex="0">
-          <strong>Paste or drop an optional replacement image</strong>
-          <span>Ctrl+V / Cmd-V works anywhere on this page.</span>
-          <div class="upload-status" id="upload-status">{{ brief.image or 'No image attached.' }}</div>
-        </div>
-        <div class="grid two">
-          <label>Image file<input type="file" name="image_file" id="image-file" accept="image/*"></label>
-          <label>Image URL<input name="image" id="image-url" value="{{ brief.image }}"></label>
-        </div>
-        <label>Image alt text <small>required when an image is attached</small><input name="alt" value="{{ brief.alt }}"></label>
-
-        <label>Article body / Markdown
-          <textarea name="body" id="body" rows="26">{{ brief.body_md }}</textarea>
-        </label>
-        <button class="btn secondary" type="submit">Re-run Quality Gate</button>
-      </form>
-    </section>
-
-    <aside class="panel gate-panel">
-      <div class="panel-title">Quality gate</div>
-      {% if result.autofixes %}
-        <div class="mini-heading">Auto-fixes applied</div>
-        {% for f in result.autofixes %}<div class="issue autofix">✓ {{ f }}</div>{% endfor %}
-      {% endif %}
-
-      {% if result.issues %}
-        {% for i in result.issues %}
-          <div class="issue {{ i.severity }}">
-            <strong>{{ i.rule }}</strong>
-            <span>{{ i.detail }}</span>
-          </div>
-        {% endfor %}
-      {% else %}
-        <div class="empty-good">No quality or claims issues found.</div>
-      {% endif %}
-
-      <div class="publish-box">
-        <div>
-          <strong>Ready?</strong>
-          <p><b>Queue for schedule</b> uses the normal FIFO publishing ramp and now pushes the reviewed article to GitHub immediately. <b>Publish immediately</b> is only for breaking/time-sensitive stories. If the gate is wrong but you have personally reviewed the article, <b>Queue anyway</b> records a manual editorial override.</p>
-        </div>
-        {% if not queued_now %}
-        <form method="post" action="{{ url_for('queue_reviewed') }}">
-          <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
-          <button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Approve & queue</button>
-        </form>
-        {% if not result.ok %}
-        <form method="post" action="{{ url_for('queue_override') }}" id="override-queue-form">
-          <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
-          <button class="btn secondary full" type="submit" onclick="return confirm('You are overriding the quality gate for an article you personally reviewed. Queue it anyway?')">Queue anyway — manual override</button>
-        </form>
-        {% endif %}
-        <form method="post" action="/publish-now">
-          <input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}">
-          <button class="btn primary full" type="submit" {{ '' if result.ok else 'disabled' }} onclick="return confirm('Publish this article immediately outside the normal ramp schedule?')">Publish immediately</button>
-        </form>
-        {% else %}
-        <div class="empty-good">Queued successfully. Returning to the batch list…</div>
-        {% endif %}
-      </div>
-    </aside>
+    <section class="panel"><div class="panel-title">Edit before publishing</div><form method="post" action="{{ url_for('review') }}" enctype="multipart/form-data" class="editor-card compact" id="article-form"><input type="hidden" name="mode" value="paste"><div class="grid two"><label>Primary keyword<input name="keyword" value="{{ brief.primary_keyword }}"></label><label>Slug<input name="slug" id="slug" value="{{ brief.slug }}"></label></div><label>Title<input name="title" value="{{ brief.title }}" required></label><label>Meta description<textarea name="meta" rows="3">{{ brief.meta_description }}</textarea></label><label>H1<input name="h1" value="{{ brief.h1 }}"></label><div class="grid three"><label>Market<select name="market">{% for m in ['US','UK','CA','AU'] %}<option {{ 'selected' if brief.target_market == m else '' }}>{{ m }}</option>{% endfor %}</select></label><label>Link article to<select name="game" id="game-destination"><option value="" {{ 'selected' if not brief.game else '' }}>Dolla homepage / general</option><option value="voidrun" {{ 'selected' if brief.game == 'voidrun' else '' }}>VOID Run</option><option value="crash" {{ 'selected' if brief.game == 'crash' else '' }}>Crash</option><option value="plinko" {{ 'selected' if brief.game == 'plinko' else '' }}>Plinko</option><option value="mines" {{ 'selected' if brief.game == 'mines' else '' }}>Mines</option><option value="dice" {{ 'selected' if brief.game == 'dice' else '' }}>Dice</option><option value="limbo" {{ 'selected' if brief.game == 'limbo' else '' }}>Limbo</option><option value="keno" {{ 'selected' if brief.game == 'keno' else '' }}>Keno</option><option value="hilo" {{ 'selected' if brief.game == 'hilo' else '' }}>Hi/Lo</option><option value="slots" {{ 'selected' if brief.game == 'slots' else '' }}>Slots</option><option value="blackjack" {{ 'selected' if brief.game == 'blackjack' else '' }}>Blackjack</option><option value="roulette" {{ 'selected' if brief.game == 'roulette' else '' }}>Roulette</option><option value="olympus" {{ 'selected' if brief.game == 'olympus' else '' }}>Gods of Olympus</option><option value="inferno" {{ 'selected' if brief.game == 'inferno' else '' }}>Inferno Vault</option><option value="bigscore" {{ 'selected' if brief.game == 'bigscore' else '' }}>The Big Score</option><option value="chariot" {{ 'selected' if brief.game == 'chariot' else '' }}>Chariot Race</option><option value="penalty" {{ 'selected' if brief.game == 'penalty' else '' }}>Penalty Shooter</option><option value="lucky7" {{ 'selected' if brief.game == 'lucky7' else '' }}>Lucky 7</option><option value="dond" {{ 'selected' if brief.game == 'dond' else '' }}>Deal or No Deal</option></select><small>This controls the Dolla CTA/link on the published article.</small></label><label>Schedule<input value="Automatic — FIFO queue" disabled><input type="hidden" name="publish_date" value=""><small>No date picking needed. Queue order controls normal publishing.</small></label></div><div class="grid two"><label>Angle<input name="angle" value="{{ brief.angle }}"></label><label>Intent<input name="intent" value="{{ brief.intent }}"></label></div><label>Why Dolla fits<input name="why" value="{{ brief.why_dolla }}"></label><div class="paste-image small" id="paste-image" tabindex="0"><strong>Paste or drop an optional replacement image</strong><span>Ctrl+V / Cmd-V works anywhere on this page.</span><div class="upload-status" id="upload-status">{{ brief.image or 'No image attached.' }}</div></div><div class="grid two"><label>Image file<input type="file" name="image_file" id="image-file" accept="image/*"></label><label>Image URL<input name="image" id="image-url" value="{{ brief.image }}"></label></div><label>Image alt text <small>required when an image is attached</small><input name="alt" value="{{ brief.alt }}"></label><label>Article body / Markdown<textarea name="body" id="body" rows="26">{{ brief.body_md }}</textarea></label><button class="btn secondary" type="submit">Re-run Quality Gate</button></form></section>
+    <aside class="panel gate-panel"><div class="panel-title">Quality gate</div>{% if result.autofixes %}<div class="mini-heading">Auto-fixes applied</div>{% for f in result.autofixes %}<div class="issue autofix">✓ {{ f }}</div>{% endfor %}{% endif %}{% if result.issues %}{% for i in result.issues %}<div class="issue {{ i.severity }}"><strong>{{ i.rule }}</strong><span>{{ i.detail }}</span></div>{% endfor %}{% else %}<div class="empty-good">No quality or claims issues found.</div>{% endif %}<div class="publish-box"><div><strong>Ready?</strong><p><b>Queue for schedule</b> uses the normal FIFO publishing ramp and now pushes the reviewed article to GitHub immediately. <b>Publish immediately</b> is only for breaking/time-sensitive stories. If the gate is wrong but you have personally reviewed the article, <b>Queue anyway</b> records a manual editorial override.</p></div>{% if not queued_now %}<form method="post" action="{{ url_for('queue_reviewed') }}"><input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}"><button class="btn secondary full" type="submit" {{ '' if result.ok else 'disabled' }}>Approve & queue</button></form>{% if not result.ok %}<form method="post" action="{{ url_for('queue_override') }}" id="override-queue-form"><input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}"><button class="btn secondary full" type="submit" onclick="return confirm('You are overriding the quality gate for an article you personally reviewed. Queue it anyway?')">Queue anyway — manual override</button></form>{% endif %}<form method="post" action="/publish-now"><input type="hidden" name="brief_json" value="{{ brief.to_dict()|tojson|forceescape }}"><button class="btn primary full" type="submit" {{ '' if result.ok else 'disabled' }} onclick="return confirm('Publish this article immediately outside the normal ramp schedule?')">Publish immediately</button></form>{% else %}<div class="empty-good">Queued successfully. Returning to the batch list…</div>{% endif %}</div></aside>
   </div>
-
-  <section class="panel preview-panel">
-    <div class="panel-title">Rendered page preview</div>
-    <iframe class="preview" srcdoc="{{ preview|e }}"></iframe>
-  </section>
+  <section class="panel preview-panel"><div class="panel-title">Rendered page preview</div><iframe class="preview" srcdoc="{{ preview|e }}"></iframe></section>
 </main>
-
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 <script>
 (() => {
-  if (!window.opener || window.opener.closed) return;
   try {
-    const STORE = 'dolla_batch_drafts_v2';
-    const slug = {{ brief.slug|tojson }};
-    const gateOk = {{ 'true' if result.ok else 'false' }};
-    const queued = {{ 'true' if brief.status == 'queued' else 'false' }};
-    let drafts = JSON.parse(window.opener.localStorage.getItem(STORE) || '[]');
-    const idx = drafts.findIndex(d => (d.slug || '') === slug);
+    const STORE='dolla_batch_drafts_v2';
+    const SYNC='dolla_batch_sync_v1';
+    const slug={{ brief.slug|tojson }};
+    const gateOk={{ 'true' if result.ok else 'false' }};
+    const queued={{ 'true' if brief.status == 'queued' else 'false' }};
+    let drafts=[];
+    try{drafts=JSON.parse(localStorage.getItem(STORE)||'[]')}catch{}
+    const idx=drafts.findIndex(d=>(d.slug||'')===slug);
 
-    if (queued) {
-      if (idx >= 0) {
-        drafts.splice(idx, 1);
-        window.opener.localStorage.setItem(STORE, JSON.stringify(drafts));
+    if(queued){
+      if(idx>=0){drafts.splice(idx,1);localStorage.setItem(STORE,JSON.stringify(drafts));}
+      localStorage.setItem(SYNC,JSON.stringify({type:'queued',slug,at:Date.now()}));
+      if(window.opener&&!window.opener.closed){
+        try{window.opener.postMessage({type:'dolla-draft-queued',slug},location.origin)}catch{}
+        try{window.opener.focus()}catch{}
       }
-      window.opener.location.reload();
-      window.opener.focus();
-      setTimeout(() => window.close(), 250);
+      setTimeout(()=>{
+        try{window.close()}catch{}
+        setTimeout(()=>{if(!window.closed)window.location.replace('/static/batch.html')},250);
+      },180);
       return;
     }
 
-    if (idx < 0) return;
-    drafts[idx].gateOk = gateOk;
-    if (!gateOk) drafts[idx].approved = false;
-    drafts[idx].html = '<!doctype html>\n' + document.documentElement.outerHTML;
-    window.opener.localStorage.setItem(STORE, JSON.stringify(drafts));
-
-    const card = window.opener.document.querySelector(`.open-draft[data-id="${drafts[idx].id}"]`)?.closest('.draft-card');
-    if (card) {
-      const checkbox = card.querySelector('.draft-check');
-      const status = card.querySelector('.draft-status');
-      if (checkbox) {
-        checkbox.disabled = !gateOk;
-        checkbox.title = gateOk ? 'Mark editorially approved' : 'Blocked by quality gate';
-      }
-      if (status) {
-        status.classList.toggle('blocked', !gateOk);
-        status.classList.toggle('approved', Boolean(gateOk && drafts[idx].approved));
-        status.textContent = gateOk ? (drafts[idx].approved ? 'APPROVED ✓' : 'PASS — read & check') : 'BLOCKED — open to fix';
-      }
+    if(idx>=0){
+      drafts[idx].gateOk=gateOk;
+      if(!gateOk)drafts[idx].approved=false;
+      localStorage.setItem(STORE,JSON.stringify(drafts));
+      localStorage.setItem(SYNC,JSON.stringify({type:'status',slug,gateOk,at:Date.now()}));
+      if(window.opener&&!window.opener.closed){try{window.opener.postMessage({type:'dolla-draft-status',slug,gateOk},location.origin)}catch{}}
     }
-
-    const summary = window.opener.document.getElementById('draft-summary');
-    if (summary) {
-      const passed = drafts.filter(d => d.gateOk).length;
-      const approved = drafts.filter(d => d.gateOk && d.approved).length;
-      summary.textContent = `${drafts.length} draft${drafts.length === 1 ? '' : 's'} · ${passed} PASS · ${approved} checked`;
-    }
-  } catch (err) {
-    console.warn('Could not sync batch review status', err);
-  }
+  } catch(err){console.warn('Could not sync batch review status',err)}
 })();
 </script>
 </body>
