@@ -16,10 +16,17 @@ cd /d "%DESK_DIR%"
 
 echo [1/4] Updating Content Desk...
 if exist "%DESK_DIR%.git" (
-  git pull --ff-only
-  if errorlevel 1 echo WARNING: Content Desk update failed; using current local copy.
+  git fetch origin main
+  if errorlevel 1 (
+    echo WARNING: Could not fetch Content Desk updates; using current local copy.
+  ) else (
+    rem The desk repo contains app code only; browser drafts and content live elsewhere.
+    rem Resetting it prevents stale local code from blocking launcher updates.
+    git reset --hard origin/main
+    if errorlevel 1 echo WARNING: Content Desk sync failed; using current local copy.
+  )
 ) else (
-  echo Portable copy detected - skipping Content Desk git pull.
+  echo Portable copy detected - skipping Content Desk git sync.
 )
 
 echo [2/4] Updating content engine...
