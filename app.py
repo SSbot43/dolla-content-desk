@@ -606,17 +606,42 @@ def review():
 
 
 @app.route("/queue", methods=["POST"])
-def enqueue():
+@app.route("/queue-local", methods=["POST"])
+def queue_local():
     brief = Brief.from_dict(json.loads(request.form["brief_json"]))
     result = gate_run(brief, published_bodies=comparison_bodies(brief.slug))
     if not result.ok:
         return show_review(brief, error="Still blocked — fix the blocking issues before queueing.")
+
     brief = queue_brief(result.fixed_brief or brief)
+    return show_review(
+        brief,
+        notice=(
+            "Queued locally — not pushed yet. You can approve more articles now, then use "
+            "Push all queued on the dashboard once when you are finished."
+        ),
+    )
+
+
+@app.route("/push-queued-all", methods=["POST"])
+def push_queued_all():
+    published = load_published()
+    queue = [b for b in load_queue() if b.body_md and b.slug not in published]
+    if not queue:
+        return redirect(url_for("dashboard", pushed=0))
+
+    paths = {"content/queue.json"}
+    for brief in queue:
+        image_path = image_repo_path(brief.image)
+        if image_path:
+            paths.add(image_path)
+
     try:
-        push_queue(brief)
+        commit_and_push(paths, f"Queue Dolla content batch {date.today().isoformat()}")
     except Exception as exc:
-        return show_review(brief, error=f"Article is queued locally, but GitHub push failed: {exc}")
-    return redirect(url_for("dashboard"))
+        return redirect(url_for("dashboard", push_error=str(exc)[:500]))
+
+    return redirect(url_for("dashboard", pushed=len(queue)))
 
 
 @app.route("/publish-push", methods=["POST"])
