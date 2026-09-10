@@ -54,190 +54,44 @@
       <p>One topic per line. You can use <strong>Title: explanation/context</strong>. Your topic list is saved automatically.</p>
       <textarea id="topics" class="topic-box" placeholder="The 19-Cent Miracle: why tiny-stake jackpot stories grab attention.\nMega Moolah Magic: why giant jackpot stories still pull attention.\nThe Live Dealer Hot Streak: a dramatic live blackjack story."></textarea>
       <div class="counter" id="topic-count">0 topics</div>
-
-      <div class="grid two" style="margin-top:14px">
-        <label>Primary market
-          <select id="market"><option>US</option><option>UK</option><option>CA</option><option>AU</option></select>
-        </label>
-        <label>Default link setting
-          <select id="game">
-            <option value="auto">Auto-detect per topic</option><option value="">Dolla homepage / general</option>
-            <option value="voidrun">VOID Run</option><option value="crash">Crash</option><option value="plinko">Plinko</option><option value="mines">Mines</option>
-            <option value="dice">Dice</option><option value="limbo">Limbo</option><option value="keno">Keno</option><option value="hilo">Hi/Lo</option>
-            <option value="slots">Slots</option><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option>
-            <option value="olympus">Gods of Olympus</option><option value="inferno">Inferno Vault</option><option value="bigscore">The Big Score</option>
-            <option value="chariot">Chariot Race</option><option value="penalty">Penalty Shooter</option><option value="lucky7">Lucky 7</option><option value="dond">Deal or No Deal</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="small-label">Optional per-article setup</div>
-      <div class="topic-link-help">For large batches, auto-detect is fine. The first 20 setup cards are shown here so the page stays manageable; the remaining topics use the default link setting.</div>
-      <div class="topic-links" id="topic-links"><div class="muted">Add topics above and their setup cards will appear here.</div></div>
-
+      <div class="grid two" style="margin-top:14px"><label>Primary market<select id="market"><option>US</option><option>UK</option><option>CA</option><option>AU</option></select></label><label>Default link setting<select id="game"><option value="auto">Auto-detect per topic</option><option value="">Dolla homepage / general</option><option value="voidrun">VOID Run</option><option value="crash">Crash</option><option value="plinko">Plinko</option><option value="mines">Mines</option><option value="dice">Dice</option><option value="limbo">Limbo</option><option value="keno">Keno</option><option value="hilo">Hi/Lo</option><option value="slots">Slots</option><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option><option value="olympus">Gods of Olympus</option><option value="inferno">Inferno Vault</option><option value="bigscore">The Big Score</option><option value="chariot">Chariot Race</option><option value="penalty">Penalty Shooter</option><option value="lucky7">Lucky 7</option><option value="dond">Deal or No Deal</option></select></label></div>
+      <div class="small-label">Optional per-article setup</div><div class="topic-link-help">For large batches, auto-detect is fine. The first 20 setup cards are shown here so the page stays manageable; the remaining topics use the default link setting.</div><div class="topic-links" id="topic-links"><div class="muted">Add topics above and their setup cards will appear here.</div></div>
       <div class="note-box"><strong>Safe large-batch mode:</strong> generation is one-by-one, not 100 simultaneous API calls. You can stop after the current article at any time. Completed drafts remain saved.</div>
-
-      <div class="batch-actions">
-        <button class="btn primary" id="generate">Generate queue →</button>
-        <button class="btn secondary" id="stop" disabled>Stop after current article</button>
-        <span class="counter" id="overall"></span>
-      </div>
-
-      <div class="small-label">Current run</div>
-      <div class="progress-list" id="progress"><div class="muted">Nothing running yet.</div></div>
+      <div class="batch-actions"><button class="btn primary" id="generate">Generate queue →</button><button class="btn secondary" id="stop" disabled>Stop after current article</button><span class="counter" id="overall"></span></div>
+      <div class="small-label">Current run</div><div class="progress-list" id="progress"><div class="muted">Nothing running yet.</div></div>
     </section>
-
-    <aside class="batch-card">
-      <div class="row-between"><h2>Ready to review</h2><button class="btn ghost" id="clear" type="button">Clear drafts</button></div>
-      <p>Open a title to read it. Tick the checkbox when you approve it. Only PASS drafts can be bulk queued.</p>
-
-      <div class="bulk-bar">
-        <div class="row-between">
-          <div><strong id="draft-summary">0 drafts</strong><div class="bulk-meta">Checked = editorially approved</div></div>
-          <div class="review-actions" style="margin-top:0">
-            <button class="btn ghost" id="select-pass" type="button">Check all PASS</button>
-            <button class="btn ghost" id="uncheck-all" type="button">Uncheck all</button>
-          </div>
-        </div>
-        <div class="review-actions">
-          <button class="btn primary" id="queue-selected" type="button">Queue checked</button>
-          <span class="counter" id="queue-status"></span>
-        </div>
-      </div>
-
-      <div class="draft-list" id="drafts"></div>
-    </aside>
+    <aside class="batch-card"><div class="row-between"><h2>Ready to review</h2><button class="btn ghost" id="clear" type="button">Clear drafts</button></div><p>Open a title to read it. Tick the checkbox when you approve it. Only PASS drafts can be bulk queued.</p><div class="bulk-bar"><div class="row-between"><div><strong id="draft-summary">0 drafts</strong><div class="bulk-meta">Checked = editorially approved</div></div><div class="review-actions" style="margin-top:0"><button class="btn ghost" id="select-pass" type="button">Check all PASS</button><button class="btn ghost" id="uncheck-all" type="button">Uncheck all</button></div></div><div class="review-actions"><button class="btn primary" id="queue-selected" type="button">Queue checked</button><span class="counter" id="queue-status"></span></div></div><div class="draft-list" id="drafts"></div></aside>
   </div>
 </main>
-
 <script>
 (() => {
-  const STORE='dolla_batch_drafts_v2';
-  const OLD_STORE='dolla_batch_drafts_v1';
-  const PLAN_STORE='dolla_batch_plan_v2';
-  const MAX_TOPICS=100;
-  const MAX_DRAFTS=120;
+  const STORE='dolla_batch_drafts_v2'; const OLD_STORE='dolla_batch_drafts_v1'; const PLAN_STORE='dolla_batch_plan_v2'; const SYNC_STORE='dolla_batch_sync_v1'; const MAX_TOPICS=100; const MAX_DRAFTS=120;
   const DESTINATIONS=[['','Dolla homepage / general'],['voidrun','VOID Run'],['crash','Crash'],['plinko','Plinko'],['mines','Mines'],['dice','Dice'],['limbo','Limbo'],['keno','Keno'],['hilo','Hi/Lo'],['slots','Slots'],['blackjack','Blackjack'],['roulette','Roulette'],['olympus','Gods of Olympus'],['inferno','Inferno Vault'],['bigscore','The Big Score'],['chariot','Chariot Race'],['penalty','Penalty Shooter'],['lucky7','Lucky 7'],['dond','Deal or No Deal']];
-  const topicsEl=document.getElementById('topics'), countEl=document.getElementById('topic-count'), topicLinksEl=document.getElementById('topic-links');
-  const progress=document.getElementById('progress'), draftsEl=document.getElementById('drafts');
-  const generateBtn=document.getElementById('generate'), stopBtn=document.getElementById('stop'), overall=document.getElementById('overall');
-  const queueStatus=document.getElementById('queue-status'), draftSummary=document.getElementById('draft-summary');
-  const topicOverrides={}, topicFiles={}, topicAlts={};
-  let stopRequested=false, running=false, queueing=false;
-
-  function lines(){return topicsEl.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).slice(0,MAX_TOPICS)}
-  function cleanPrefix(s){return s.replace(/^\s*(?:\d+[.)]|[-•])\s*/, '').trim()}
-  function splitTopic(raw){let s=cleanPrefix(raw),title=s,context='';const bold=s.match(/^\*\*(.+?)\*\*\s*:?[\s]*(.*)$/);if(bold){title=bold[1].trim().replace(/:\s*$/,'');context=bold[2].trim();return{title,context}}const idx=s.indexOf(':');if(idx>2&&idx<100&&s.slice(idx+1).trim().length>8){title=s.slice(0,idx).trim();context=s.slice(idx+1).trim()}return{title,context}}
+  const topicsEl=document.getElementById('topics'),countEl=document.getElementById('topic-count'),topicLinksEl=document.getElementById('topic-links'),progress=document.getElementById('progress'),draftsEl=document.getElementById('drafts'),generateBtn=document.getElementById('generate'),stopBtn=document.getElementById('stop'),overall=document.getElementById('overall'),queueStatus=document.getElementById('queue-status'),draftSummary=document.getElementById('draft-summary');
+  const topicOverrides={},topicFiles={},topicAlts={}; let stopRequested=false,running=false,queueing=false;
+  function lines(){return topicsEl.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).slice(0,MAX_TOPICS)} function cleanPrefix(s){return s.replace(/^\s*(?:\d+[.)]|[-•])\s*/, '').trim()} function splitTopic(raw){let s=cleanPrefix(raw),title=s,context='';const bold=s.match(/^\*\*(.+?)\*\*\s*:?[\s]*(.*)$/);if(bold){title=bold[1].trim().replace(/:\s*$/,'');context=bold[2].trim();return{title,context}}const idx=s.indexOf(':');if(idx>2&&idx<100&&s.slice(idx+1).trim().length>8){title=s.slice(0,idx).trim();context=s.slice(idx+1).trim()}return{title,context}}
   function guessGame(s){s=s.toLowerCase();if(/void run/.test(s))return'voidrun';if(/\bcrash\b/.test(s))return'crash';if(/big heist|vault breaker|bank heist|big score/.test(s))return'bigscore';if(/plinko/.test(s))return'plinko';if(/mines?\b/.test(s))return'mines';if(/blackjack|live dealer/.test(s))return'blackjack';if(/roulette/.test(s))return'roulette';if(/keno/.test(s))return'keno';if(/limbo/.test(s))return'limbo';if(/\bdice\b/.test(s))return'dice';if(/slot|mega moolah|wowpot|jackpot/.test(s))return'slots';if(/hi[ -]?lo|higher.*lower/.test(s))return'hilo';if(/olympus|zeus|poseidon/.test(s))return'olympus';if(/inferno/.test(s))return'inferno';if(/chariot/.test(s))return'chariot';if(/penalty|football|soccer/.test(s))return'penalty';if(/lucky 7/.test(s))return'lucky7';if(/deal or no deal/.test(s))return'dond';return''}
-  function destinationLabel(slug){return DESTINATIONS.find(x=>x[0]===slug)?.[1]||'Dolla homepage / general'}
-  function destinationOptions(selected){return '<option value="__default__">Use default setting</option>'+DESTINATIONS.map(([slug,label])=>`<option value="${slug}" ${selected===slug?'selected':''}>${label}</option>`).join('')}
-  function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-  function keywordFromTitle(title){const stop=new Set(['the','a','an','and','or','of','to','for','in','on','with','why','how','what','is','are','this','that']);const words=(title.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(w=>!stop.has(w));return words.slice(0,6).join(' ')||title.toLowerCase().slice(0,60)}
-  function localMeta(title,game){const label=destinationLabel(game);let text=`${title}: a Dolla.fo look at why this casino story matters, what makes it interesting, and where ${label} fits the action.`;if(text.length<110)text+=' Includes free-play demo context and practical player details.';return text.slice(0,150).replace(/[ ,;:-]+$/,'')}
-  function localAngle(title,game){return`High-energy casino editorial on ${title}, tied naturally to ${destinationLabel(game)} without inventing claims.`}
-  function localWhy(game){return game?`Dolla offers a related ${destinationLabel(game)} experience with free-play demo access.`:'Dolla offers free-play demos, crypto play and a standard no-KYC flow.'}
-
-  function savePlan(){localStorage.setItem(PLAN_STORE,JSON.stringify({topics:topicsEl.value,market:document.getElementById('market').value,game:document.getElementById('game').value}))}
-  function loadPlan(){try{const p=JSON.parse(localStorage.getItem(PLAN_STORE)||'{}');if(p.topics)topicsEl.value=p.topics;if(p.market)document.getElementById('market').value=p.market;if(p.game!==undefined)document.getElementById('game').value=p.game}catch{}}
-
-  function renderTopicLinks(){
-    const raw=lines().slice(0,20);
-    if(!raw.length){topicLinksEl.innerHTML='<div class="muted">Add topics above and their setup cards will appear here.</div>';return}
-    topicLinksEl.innerHTML=raw.map((r,i)=>{
-      const p=splitTopic(r),saved=Object.prototype.hasOwnProperty.call(topicOverrides,r)?topicOverrides[r]:'__default__';
-      const picked=topicFiles[r]?.name||''; const alt=topicAlts[r]||'';
-      return `<div class="topic-link-row"><div class="topic-link-title">${i+1}. ${escapeHtml(p.title)}</div><label>Link article to<select class="topic-link-select" data-raw="${encodeURIComponent(r)}">${destinationOptions(saved)}</select></label><div class="file-cell"><label>Article image (optional)<input class="topic-image" type="file" accept="image/*" data-raw="${encodeURIComponent(r)}"></label><div class="file-picked">${picked?`Selected: ${escapeHtml(picked)}`:'No image selected — okay'}</div></div><label>Image alt text<input class="topic-alt" data-raw="${encodeURIComponent(r)}" value="${escapeHtml(alt)}" placeholder="Only required if image attached"></label></div>`
-    }).join('')+(lines().length>20?`<div class="muted">+ ${lines().length-20} more topics use the default link setting.</div>`:'')
-  }
-
-  function getDrafts(){try{return JSON.parse(localStorage.getItem(STORE)||'[]')}catch{return[]}}
-  function saveDrafts(v){localStorage.setItem(STORE,JSON.stringify(v.slice(0,MAX_DRAFTS)))}
-  function addDraft(d){const all=getDrafts().filter(x=>x.slug!==d.slug);all.unshift(d);saveDrafts(all);renderDrafts()}
-
-  function migrateOldDrafts(){
-    if(getDrafts().length)return;
-    try{
-      const old=JSON.parse(localStorage.getItem(OLD_STORE)||'[]');
-      const migrated=[];
-      for(const d of old){
-        if(!d.html)continue;
-        const doc=new DOMParser().parseFromString(d.html,'text/html');
-        const hidden=doc.querySelector('form[action*="queue"] input[name="brief_json"], input[name="brief_json"]');
-        if(!hidden?.value)continue;
-        try{const brief=JSON.parse(hidden.value);migrated.push({id:d.id||('d'+Date.now()+migrated.length),title:d.title||brief.title,slug:d.slug||brief.slug,game:d.game||brief.game,gameLabel:d.gameLabel||destinationLabel(brief.game),hasImage:Boolean(brief.image),at:d.at||Date.now(),gateOk:!doc.querySelector('.verdict.bad'),approved:false,brief})}catch{}
-      }
-      if(migrated.length)saveDrafts(migrated);
-    }catch{}
-  }
-
-  function renderDrafts(){
-    const all=getDrafts();const approved=all.filter(d=>d.approved&&d.gateOk).length;const passed=all.filter(d=>d.gateOk).length;
-    draftSummary.textContent=`${all.length} draft${all.length===1?'':'s'} · ${passed} PASS · ${approved} checked`;
-    draftsEl.innerHTML=all.length?all.map(d=>`<div class="draft-card"><input class="draft-check" type="checkbox" data-id="${d.id}" ${d.approved?'checked':''} ${d.gateOk?'':'disabled'} title="${d.gateOk?'Mark editorially approved':'Blocked by quality gate'}"><div class="draft-main"><a class="draft-title open-draft" data-id="${d.id}">${escapeHtml(d.title)}</a><p>${escapeHtml(d.gameLabel||'Dolla homepage / general')} · ${d.hasImage?'image attached':'no image'} · ${new Date(d.at).toLocaleString()}</p><div class="draft-actions"><span class="draft-status ${d.gateOk?(d.approved?'approved':''):'blocked'}">${d.gateOk?(d.approved?'APPROVED ✓':'PASS — read & check'):'BLOCKED — open to fix'}</span><button class="btn ghost open-draft" data-id="${d.id}" type="button">Read</button><button class="btn ghost delete-draft" data-id="${d.id}" type="button">Remove</button></div></div></div>`).join(''):'<div class="muted">No batch drafts waiting for review.</div>';
-  }
-
-  function openDraft(id){
-    const d=getDrafts().find(x=>x.id===id);if(!d?.brief)return;
-    const b=d.brief;const form=document.createElement('form');form.method='POST';form.action='/review';form.target='_blank';form.style.display='none';
-    const fields={keyword:b.primary_keyword||'',slug:b.slug||'',title:b.title||'',meta:b.meta_description||'',h1:b.h1||'',body:b.body_md||'',market:b.target_market||'US',game:b.game||'',publish_date:b.publish_date||'',image:b.image||'',alt:b.alt||'',angle:b.angle||'',intent:b.intent||'informational',why:b.why_dolla||''};
-    for(const [name,value] of Object.entries(fields)){const i=document.createElement('input');i.type='hidden';i.name=name;i.value=value;form.appendChild(i)}
-    document.body.appendChild(form);form.submit();form.remove();
-  }
-
+  function destinationLabel(slug){return DESTINATIONS.find(x=>x[0]===slug)?.[1]||'Dolla homepage / general'} function destinationOptions(selected){return '<option value="__default__">Use default setting</option>'+DESTINATIONS.map(([slug,label])=>`<option value="${slug}" ${selected===slug?'selected':''}>${label}</option>`).join('')} function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function keywordFromTitle(title){const stop=new Set(['the','a','an','and','or','of','to','for','in','on','with','why','how','what','is','are','this','that']);const words=(title.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(w=>!stop.has(w));return words.slice(0,6).join(' ')||title.toLowerCase().slice(0,60)} function localMeta(title,game){const label=destinationLabel(game);let text=`${title}: a Dolla.fo look at why this casino story matters, what makes it interesting, and where ${label} fits the action.`;if(text.length<110)text+=' Includes free-play demo context and practical player details.';return text.slice(0,150).replace(/[ ,;:-]+$/,'')} function localAngle(title,game){return`High-energy casino editorial on ${title}, tied naturally to ${destinationLabel(game)} without inventing claims.`} function localWhy(game){return game?`Dolla offers a related ${destinationLabel(game)} experience with free-play demo access.`:'Dolla offers free-play demos, crypto play and a standard no-KYC flow.'}
+  function savePlan(){localStorage.setItem(PLAN_STORE,JSON.stringify({topics:topicsEl.value,market:document.getElementById('market').value,game:document.getElementById('game').value}))} function loadPlan(){try{const p=JSON.parse(localStorage.getItem(PLAN_STORE)||'{}');if(p.topics)topicsEl.value=p.topics;if(p.market)document.getElementById('market').value=p.market;if(p.game!==undefined)document.getElementById('game').value=p.game}catch{}}
+  function renderTopicLinks(){const raw=lines().slice(0,20);if(!raw.length){topicLinksEl.innerHTML='<div class="muted">Add topics above and their setup cards will appear here.</div>';return}topicLinksEl.innerHTML=raw.map((r,i)=>{const p=splitTopic(r),saved=Object.prototype.hasOwnProperty.call(topicOverrides,r)?topicOverrides[r]:'__default__';const picked=topicFiles[r]?.name||'',alt=topicAlts[r]||'';return `<div class="topic-link-row"><div class="topic-link-title">${i+1}. ${escapeHtml(p.title)}</div><label>Link article to<select class="topic-link-select" data-raw="${encodeURIComponent(r)}">${destinationOptions(saved)}</select></label><div class="file-cell"><label>Article image (optional)<input class="topic-image" type="file" accept="image/*" data-raw="${encodeURIComponent(r)}"></label><div class="file-picked">${picked?`Selected: ${escapeHtml(picked)}`:'No image selected — okay'}</div></div><label>Image alt text<input class="topic-alt" data-raw="${encodeURIComponent(r)}" value="${escapeHtml(alt)}" placeholder="Only required if image attached"></label></div>`}).join('')+(lines().length>20?`<div class="muted">+ ${lines().length-20} more topics use the default link setting.</div>`:'')}
+  function getDrafts(){try{return JSON.parse(localStorage.getItem(STORE)||'[]')}catch{return[]}} function saveDrafts(v){localStorage.setItem(STORE,JSON.stringify(v.slice(0,MAX_DRAFTS)))} function addDraft(d){const all=getDrafts().filter(x=>x.slug!==d.slug);all.unshift(d);saveDrafts(all);renderDrafts()}
+  function migrateOldDrafts(){if(getDrafts().length)return;try{const old=JSON.parse(localStorage.getItem(OLD_STORE)||'[]');const migrated=[];for(const d of old){if(!d.html)continue;const doc=new DOMParser().parseFromString(d.html,'text/html');const hidden=doc.querySelector('form[action*="queue"] input[name="brief_json"], input[name="brief_json"]');if(!hidden?.value)continue;try{const brief=JSON.parse(hidden.value);migrated.push({id:d.id||('d'+Date.now()+migrated.length),title:d.title||brief.title,slug:d.slug||brief.slug,game:d.game||brief.game,gameLabel:d.gameLabel||destinationLabel(brief.game),hasImage:Boolean(brief.image),at:d.at||Date.now(),gateOk:!doc.querySelector('.verdict.bad'),approved:false,brief})}catch{}}if(migrated.length)saveDrafts(migrated)}catch{}}
+  function renderDrafts(){const all=getDrafts(),approved=all.filter(d=>d.approved&&d.gateOk).length,passed=all.filter(d=>d.gateOk).length;draftSummary.textContent=`${all.length} draft${all.length===1?'':'s'} · ${passed} PASS · ${approved} checked`;draftsEl.innerHTML=all.length?all.map(d=>`<div class="draft-card"><input class="draft-check" type="checkbox" data-id="${d.id}" ${d.approved?'checked':''} ${d.gateOk?'':'disabled'} title="${d.gateOk?'Mark editorially approved':'Blocked by quality gate'}"><div class="draft-main"><a class="draft-title open-draft" data-id="${d.id}">${escapeHtml(d.title)}</a><p>${escapeHtml(d.gameLabel||'Dolla homepage / general')} · ${d.hasImage?'image attached':'no image'} · ${new Date(d.at).toLocaleString()}</p><div class="draft-actions"><span class="draft-status ${d.gateOk?(d.approved?'approved':''):'blocked'}">${d.gateOk?(d.approved?'APPROVED ✓':'PASS — read & check'):'BLOCKED — open to fix'}</span><button class="btn ghost open-draft" data-id="${d.id}" type="button">Read</button><button class="btn ghost delete-draft" data-id="${d.id}" type="button">Remove</button></div></div></div>`).join(''):'<div class="muted">No batch drafts waiting for review.</div>'}
+  function removeQueuedSlug(slug){if(!slug)return;const all=getDrafts().filter(d=>(d.slug||'')!==slug);saveDrafts(all);renderDrafts();queueStatus.textContent=`Queued ${slug}`}
+  window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const data=e.data||{};if(data.type==='dolla-draft-queued')removeQueuedSlug(data.slug);if(data.type==='dolla-draft-status'){const all=getDrafts();const d=all.find(x=>(x.slug||'')===data.slug);if(d){d.gateOk=!!data.gateOk;if(!d.gateOk)d.approved=false;saveDrafts(all);renderDrafts()}}});
+  window.addEventListener('storage',e=>{if(e.key===STORE||e.key===SYNC_STORE)renderDrafts()});
+  window.addEventListener('focus',()=>renderDrafts()); document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderDrafts()});
+  function openDraft(id){const d=getDrafts().find(x=>x.id===id);if(!d?.brief)return;const b=d.brief,form=document.createElement('form');form.method='POST';form.action='/review';form.target='_blank';form.style.display='none';const fields={keyword:b.primary_keyword||'',slug:b.slug||'',title:b.title||'',meta:b.meta_description||'',h1:b.h1||'',body:b.body_md||'',market:b.target_market||'US',game:b.game||'',publish_date:b.publish_date||'',image:b.image||'',alt:b.alt||'',angle:b.angle||'',intent:b.intent||'informational',why:b.why_dolla||''};for(const [name,value] of Object.entries(fields)){const i=document.createElement('input');i.type='hidden';i.name=name;i.value=value;form.appendChild(i)}document.body.appendChild(form);form.submit();form.remove()}
   function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-
-  async function requestArticle(r,market){
-    const fd=new FormData();fd.append('mode','generate');fd.append('title',r.title);fd.append('market',market);fd.append('game',r.game);fd.append('trend_context',r.context||r.raw);fd.append('keyword',keywordFromTitle(r.title));fd.append('meta',localMeta(r.title,r.game));fd.append('angle',localAngle(r.title,r.game));fd.append('why',localWhy(r.game));fd.append('alt',r.alt);fd.append('intent','informational');if(r.file)fd.append('image_file',r.file,r.file.name);
-    const res=await fetch('/feed',{method:'POST',body:fd});const html=await res.text();if(!res.ok)throw new Error(`Server returned ${res.status}`);
-    const doc=new DOMParser().parseFromString(html,'text/html');const banner=doc.querySelector('.banner.bad');const bannerText=(banner?.textContent||'').replace(/\s+/g,' ').trim();const bodyText=(doc.querySelector('#body')?.value||'').trim();if(bannerText||!bodyText)throw new Error(bannerText||'Writer did not return an article body');
-    const hidden=doc.querySelector('form[action*="queue"] input[name="brief_json"], input[name="brief_json"]');if(!hidden?.value)throw new Error('Draft was generated but its review payload was missing');
-    const brief=JSON.parse(hidden.value);const gateOk=!doc.querySelector('.verdict.bad');return{title:brief.title||r.title,slug:brief.slug,brief,gateOk};
-  }
-
-  async function queueOne(d){
-    const fd=new FormData();fd.append('brief_json',JSON.stringify(d.brief));const res=await fetch('/queue-local',{method:'POST',body:fd});const html=await res.text();if(!res.ok)throw new Error(`Server returned ${res.status}`);const doc=new DOMParser().parseFromString(html,'text/html');const bad=doc.querySelector('.banner.bad');if(bad)throw new Error((bad.textContent||'Quality gate blocked this article').replace(/\s+/g,' ').trim());return true;
-  }
-
-  topicsEl.addEventListener('input',()=>{const n=lines().length;countEl.textContent=`${n} topic${n===1?'':'s'}${topicsEl.value.split(/\n+/).filter(x=>x.trim()).length>MAX_TOPICS?' · first 100 will run':''}`;renderTopicLinks();savePlan()});
-  document.getElementById('market').addEventListener('change',savePlan);document.getElementById('game').addEventListener('change',savePlan);
-  topicLinksEl.addEventListener('change',e=>{const sel=e.target.closest('.topic-link-select');if(sel){topicOverrides[decodeURIComponent(sel.dataset.raw||'')]=sel.value;return}const file=e.target.closest('.topic-image');if(file){const raw=decodeURIComponent(file.dataset.raw||'');if(file.files?.[0])topicFiles[raw]=file.files[0];renderTopicLinks()}});
-  topicLinksEl.addEventListener('input',e=>{const alt=e.target.closest('.topic-alt');if(alt)topicAlts[decodeURIComponent(alt.dataset.raw||'')]=alt.value});
-
-  draftsEl.addEventListener('click',e=>{const open=e.target.closest('.open-draft'),del=e.target.closest('.delete-draft');if(open)openDraft(open.dataset.id);if(del){saveDrafts(getDrafts().filter(x=>x.id!==del.dataset.id));renderDrafts()}});
-  draftsEl.addEventListener('change',e=>{const cb=e.target.closest('.draft-check');if(!cb)return;const all=getDrafts();const d=all.find(x=>x.id===cb.dataset.id);if(d&&d.gateOk)d.approved=cb.checked;saveDrafts(all);renderDrafts()});
-
-  document.getElementById('select-pass').addEventListener('click',()=>{const all=getDrafts();all.forEach(d=>{if(d.gateOk)d.approved=true});saveDrafts(all);renderDrafts()});
-  document.getElementById('uncheck-all').addEventListener('click',()=>{const all=getDrafts();all.forEach(d=>d.approved=false);saveDrafts(all);renderDrafts()});
-  document.getElementById('clear').addEventListener('click',()=>{if(confirm('Clear all saved batch drafts from this browser? Queued articles are not affected.')){localStorage.removeItem(STORE);renderDrafts()}});
-  stopBtn.addEventListener('click',()=>{stopRequested=true;stopBtn.disabled=true;stopBtn.textContent='Stopping after current…'});
-
-  document.getElementById('queue-selected').addEventListener('click',async()=>{
-    if(queueing)return;let all=getDrafts();const selected=all.filter(d=>d.approved&&d.gateOk);if(!selected.length)return alert('Check at least one PASS article first.');
-    if(!confirm(`Queue ${selected.length} approved article${selected.length===1?'':'s'} into the automatic publishing schedule?`))return;
-    queueing=true;document.getElementById('queue-selected').disabled=true;let ok=0;const failed=[];
-    for(let i=0;i<selected.length;i++){const d=selected[i];queueStatus.textContent=`Queueing ${i+1} of ${selected.length}…`;try{await queueOne(d);ok++;all=all.filter(x=>x.id!==d.id);saveDrafts(all)}catch(err){failed.push(`${d.title}: ${err.message||err}`)}renderDrafts()}
-    queueStatus.textContent=failed.length?`${ok} queued · ${failed.length} failed`:`${ok} queued successfully`;
-    if(failed.length)alert(`Some articles were not queued:\n\n${failed.slice(0,8).join('\n')}${failed.length>8?'\n…':''}`);
-    queueing=false;document.getElementById('queue-selected').disabled=false;
-  });
-
-  generateBtn.addEventListener('click',async()=>{
-    if(running)return;const raw=lines();if(!raw.length)return alert('Paste at least 1 topic.');const missingAlt=raw.filter(r=>topicFiles[r]&&!(topicAlts[r]||'').trim());if(missingAlt.length)return alert(`Add alt text for attached images: ${missingAlt.map(r=>splitTopic(r).title).join(', ')}`);
-    running=true;stopRequested=false;generateBtn.disabled=true;stopBtn.disabled=false;stopBtn.textContent='Stop after current article';progress.innerHTML='';
-    const market=document.getElementById('market').value,gameChoice=document.getElementById('game').value;const existingTitles=new Set(getDrafts().map(d=>(d.title||'').trim().toLowerCase()));
-    const rows=raw.map((r,i)=>{const p=splitTopic(r),override=topicOverrides[r]??'__default__';let game=override;if(override==='__default__')game=gameChoice==='auto'?guessGame(r):gameChoice;return{raw:r,...p,game,file:topicFiles[r],alt:(topicAlts[r]||'').trim(),id:'p'+Date.now()+i,state:'waiting'}});
-    function paint(){const visible=rows.slice(Math.max(0,Math.min(rows.length-12,(rows.findIndex(r=>r.state==='running')<0?0:rows.findIndex(r=>r.state==='running')-3))),Math.min(rows.length,Math.max(12,(rows.findIndex(r=>r.state==='running')<0?12:rows.findIndex(r=>r.state==='running')+9))));progress.innerHTML=visible.map((r)=>`<div class="progress-item"><div class="progress-row"><strong>${escapeHtml(r.title)}</strong><span class="state ${r.state}">${r.state}</span></div>${r.message?`<div class="muted small-text">${escapeHtml(r.message)}</div>`:''}</div>`).join('')}
-    paint();let completed=0,skipped=0;
-    for(let i=0;i<rows.length;i++){
-      if(stopRequested)break;const r=rows[i];if(existingTitles.has(r.title.trim().toLowerCase())){r.state='skipped';r.message='Already saved in Ready to review';skipped++;paint();continue}
-      r.state='running';r.message=r.file?'Uploading image, then writing…':'Writing article…';paint();overall.textContent=`Generating ${i+1} of ${rows.length} · ${completed} ready`;
-      try{const result=await requestArticle(r,market);r.state=result.gateOk?'done':'error';r.message=result.gateOk?'PASS — saved for review':'Generated but blocked by gate — open draft to fix';addDraft({id:'d'+Date.now()+i,title:result.title,slug:result.slug,game:r.game,gameLabel:destinationLabel(r.game),hasImage:Boolean(result.brief.image),at:Date.now(),gateOk:result.gateOk,approved:false,brief:result.brief});existingTitles.add(result.title.trim().toLowerCase());completed++}
-      catch(err){r.state='error';r.message=(err.message||String(err)).slice(0,300)}
-      paint();if(i<rows.length-1&&!stopRequested)await sleep(2500)
-    }
-    overall.textContent=stopRequested?`Stopped. ${completed} new draft${completed===1?'':'s'} saved.`:`Finished. ${completed} new · ${skipped} already saved.`;running=false;generateBtn.disabled=false;stopBtn.disabled=true;stopBtn.textContent='Stop after current article';
-  });
-
+  async function requestArticle(r,market){const fd=new FormData();fd.append('mode','generate');fd.append('title',r.title);fd.append('market',market);fd.append('game',r.game);fd.append('trend_context',r.context||r.raw);fd.append('keyword',keywordFromTitle(r.title));fd.append('meta',localMeta(r.title,r.game));fd.append('angle',localAngle(r.title,r.game));fd.append('why',localWhy(r.game));fd.append('alt',r.alt);fd.append('intent','informational');if(r.file)fd.append('image_file',r.file,r.file.name);const res=await fetch('/feed',{method:'POST',body:fd});const html=await res.text();if(!res.ok)throw new Error(`Server returned ${res.status}`);const doc=new DOMParser().parseFromString(html,'text/html'),banner=doc.querySelector('.banner.bad'),bannerText=(banner?.textContent||'').replace(/\s+/g,' ').trim(),bodyText=(doc.querySelector('#body')?.value||'').trim();if(bannerText||!bodyText)throw new Error(bannerText||'Writer did not return an article body');const hidden=doc.querySelector('form[action*="queue"] input[name="brief_json"], input[name="brief_json"]');if(!hidden?.value)throw new Error('Draft was generated but its review payload was missing');const brief=JSON.parse(hidden.value),gateOk=!doc.querySelector('.verdict.bad');return{title:brief.title||r.title,slug:brief.slug,brief,gateOk}}
+  async function queueOne(d){const fd=new FormData();fd.append('brief_json',JSON.stringify(d.brief));const res=await fetch('/queue-local',{method:'POST',body:fd});const html=await res.text();if(!res.ok)throw new Error(`Server returned ${res.status}`);const doc=new DOMParser().parseFromString(html,'text/html'),bad=doc.querySelector('.banner.bad');if(bad)throw new Error((bad.textContent||'Quality gate blocked this article').replace(/\s+/g,' ').trim());return true}
+  topicsEl.addEventListener('input',()=>{const n=lines().length;countEl.textContent=`${n} topic${n===1?'':'s'}${topicsEl.value.split(/\n+/).filter(x=>x.trim()).length>MAX_TOPICS?' · first 100 will run':''}`;renderTopicLinks();savePlan()}); document.getElementById('market').addEventListener('change',savePlan); document.getElementById('game').addEventListener('change',savePlan);
+  topicLinksEl.addEventListener('change',e=>{const sel=e.target.closest('.topic-link-select');if(sel){topicOverrides[decodeURIComponent(sel.dataset.raw||'')]=sel.value;return}const file=e.target.closest('.topic-image');if(file){const raw=decodeURIComponent(file.dataset.raw||'');if(file.files?.[0])topicFiles[raw]=file.files[0];renderTopicLinks()}}); topicLinksEl.addEventListener('input',e=>{const alt=e.target.closest('.topic-alt');if(alt)topicAlts[decodeURIComponent(alt.dataset.raw||'')]=alt.value});
+  draftsEl.addEventListener('click',e=>{const open=e.target.closest('.open-draft'),del=e.target.closest('.delete-draft');if(open)openDraft(open.dataset.id);if(del){saveDrafts(getDrafts().filter(x=>x.id!==del.dataset.id));renderDrafts()}}); draftsEl.addEventListener('change',e=>{const cb=e.target.closest('.draft-check');if(!cb)return;const all=getDrafts(),d=all.find(x=>x.id===cb.dataset.id);if(d&&d.gateOk)d.approved=cb.checked;saveDrafts(all);renderDrafts()});
+  document.getElementById('select-pass').addEventListener('click',()=>{const all=getDrafts();all.forEach(d=>{if(d.gateOk)d.approved=true});saveDrafts(all);renderDrafts()}); document.getElementById('uncheck-all').addEventListener('click',()=>{const all=getDrafts();all.forEach(d=>d.approved=false);saveDrafts(all);renderDrafts()}); document.getElementById('clear').addEventListener('click',()=>{if(confirm('Clear all saved batch drafts from this browser? Queued articles are not affected.')){localStorage.removeItem(STORE);renderDrafts()}}); stopBtn.addEventListener('click',()=>{stopRequested=true;stopBtn.disabled=true;stopBtn.textContent='Stopping after current…'});
+  document.getElementById('queue-selected').addEventListener('click',async()=>{if(queueing)return;let all=getDrafts();const selected=all.filter(d=>d.approved&&d.gateOk);if(!selected.length)return alert('Check at least one PASS article first.');if(!confirm(`Queue ${selected.length} approved article${selected.length===1?'':'s'} into the automatic publishing schedule?`))return;queueing=true;document.getElementById('queue-selected').disabled=true;let ok=0;const failed=[];for(let i=0;i<selected.length;i++){const d=selected[i];queueStatus.textContent=`Queueing ${i+1} of ${selected.length}…`;try{await queueOne(d);ok++;all=all.filter(x=>x.id!==d.id);saveDrafts(all)}catch(err){failed.push(`${d.title}: ${err.message||err}`)}renderDrafts()}queueStatus.textContent=failed.length?`${ok} queued · ${failed.length} failed`:`${ok} queued successfully`;if(failed.length)alert(`Some articles were not queued:\n\n${failed.slice(0,8).join('\n')}${failed.length>8?'\n…':''}`);queueing=false;document.getElementById('queue-selected').disabled=false});
+  generateBtn.addEventListener('click',async()=>{if(running)return;const raw=lines();if(!raw.length)return alert('Paste at least 1 topic.');const missingAlt=raw.filter(r=>topicFiles[r]&&!(topicAlts[r]||'').trim());if(missingAlt.length)return alert(`Add alt text for attached images: ${missingAlt.map(r=>splitTopic(r).title).join(', ')}`);running=true;stopRequested=false;generateBtn.disabled=true;stopBtn.disabled=false;stopBtn.textContent='Stop after current article';progress.innerHTML='';const market=document.getElementById('market').value,gameChoice=document.getElementById('game').value,existingTitles=new Set(getDrafts().map(d=>(d.title||'').trim().toLowerCase()));const rows=raw.map((r,i)=>{const p=splitTopic(r),override=topicOverrides[r]??'__default__';let game=override;if(override==='__default__')game=gameChoice==='auto'?guessGame(r):gameChoice;return{raw:r,...p,game,file:topicFiles[r],alt:(topicAlts[r]||'').trim(),id:'p'+Date.now()+i,state:'waiting'}});function paint(){const runningIndex=rows.findIndex(r=>r.state==='running'),visible=rows.slice(Math.max(0,Math.min(rows.length-12,(runningIndex<0?0:runningIndex-3))),Math.min(rows.length,Math.max(12,(runningIndex<0?12:runningIndex+9))));progress.innerHTML=visible.map(r=>`<div class="progress-item"><div class="progress-row"><strong>${escapeHtml(r.title)}</strong><span class="state ${r.state}">${r.state}</span></div>${r.message?`<div class="muted small-text">${escapeHtml(r.message)}</div>`:''}</div>`).join('')}paint();let completed=0,skipped=0;for(let i=0;i<rows.length;i++){if(stopRequested)break;const r=rows[i];if(existingTitles.has(r.title.trim().toLowerCase())){r.state='skipped';r.message='Already saved in Ready to review';skipped++;paint();continue}r.state='running';r.message=r.file?'Uploading image, then writing…':'Writing article…';paint();overall.textContent=`Generating ${i+1} of ${rows.length} · ${completed} ready`;try{const result=await requestArticle(r,market);r.state=result.gateOk?'done':'error';r.message=result.gateOk?'PASS — saved for review':'Generated but blocked by gate — open draft to fix';addDraft({id:'d'+Date.now()+i,title:result.title,slug:result.slug,game:r.game,gameLabel:destinationLabel(r.game),hasImage:Boolean(result.brief.image),at:Date.now(),gateOk:result.gateOk,approved:false,brief:result.brief});existingTitles.add(result.title.trim().toLowerCase());completed++}catch(err){r.state='error';r.message=(err.message||String(err)).slice(0,300)}paint();if(i<rows.length-1&&!stopRequested)await sleep(2500)}overall.textContent=stopRequested?`Stopped. ${completed} new draft${completed===1?'':'s'} saved.`:`Finished. ${completed} new · ${skipped} already saved.`;running=false;generateBtn.disabled=false;stopBtn.disabled=true;stopBtn.textContent='Stop after current article'});
   loadPlan();migrateOldDrafts();renderDrafts();topicsEl.dispatchEvent(new Event('input'));
 })();
 </script>
