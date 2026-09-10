@@ -82,7 +82,7 @@
 
     <aside class="batch-card">
       <div class="row-between"><h2>Ready to review</h2><button class="btn ghost" id="clear" type="button">Clear saved drafts</button></div>
-      <p>Generated drafts stay in this browser. Any selected image is uploaded to the content repo folder before generation.</p>
+      <p>Only unhandled drafts stay here. Once an article is queued or published, it is removed automatically.</p>
       <div class="draft-list" id="drafts"></div>
     </aside>
   </div>
@@ -96,7 +96,7 @@
   const progress=document.getElementById('progress'), draftsEl=document.getElementById('drafts');
   const generateBtn=document.getElementById('generate'), stopBtn=document.getElementById('stop'), overall=document.getElementById('overall');
   const topicOverrides={}, topicFiles={}, topicAlts={};
-  let stopRequested=false, running=false;
+  let stopRequested=false, running=false, pruning=false;
 
   function lines(){return topicsEl.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).slice(0,5)}
   function cleanPrefix(s){return s.replace(/^\s*(?:\d+[.)]|[-•])\s*/, '').trim()}
@@ -128,7 +128,38 @@
   function getDrafts(){try{return JSON.parse(localStorage.getItem(STORE)||'[]')}catch{return[]}}
   function saveDrafts(v){localStorage.setItem(STORE,JSON.stringify(v.slice(0,20)))}
   function addDraft(d){const all=getDrafts();all.unshift(d);saveDrafts(all);renderDrafts()}
-  function renderDrafts(){const all=getDrafts();draftsEl.innerHTML=all.length?all.map(d=>`<div class="draft-card"><strong>${escapeHtml(d.title)}</strong><p>Links to: ${escapeHtml(d.gameLabel||'Dolla homepage / general')} · ${d.hasImage?'image attached':'no image (optional)'} · ${new Date(d.at).toLocaleString()}</p><div class="draft-actions"><button class="btn primary open-draft" data-id="${d.id}">Review article →</button><button class="btn ghost delete-draft" data-id="${d.id}">Remove</button></div></div>`).join(''):'<div class="muted">No batch drafts yet.</div>'}
+  function renderDrafts(){const all=getDrafts();draftsEl.innerHTML=all.length?all.map(d=>`<div class="draft-card"><strong>${escapeHtml(d.title)}</strong><p>Links to: ${escapeHtml(d.gameLabel||'Dolla homepage / general')} · ${d.hasImage?'image attached':'no image (optional)'} · ${new Date(d.at).toLocaleString()}</p><div class="draft-actions"><button class="btn primary open-draft" data-id="${d.id}">Review article →</button><button class="btn ghost delete-draft" data-id="${d.id}">Remove</button></div></div>`).join(''):'<div class="muted">No batch drafts waiting for review.</div>'}
+
+  function draftSlug(d){
+    if(d.slug)return d.slug;
+    try{
+      const doc=new DOMParser().parseFromString(d.html||'','text/html');
+      const input=doc.querySelector('input[name="slug"]');
+      if(input?.value)return input.value.trim();
+      const txt=doc.body?.textContent||'';
+      const m=txt.match(/\/guides\/([a-z0-9-]+)/i);
+      if(m)return m[1];
+    }catch{}
+    return '';
+  }
+
+  async function pruneHandledDrafts(){
+    if(pruning)return; pruning=true;
+    try{
+      const res=await fetch('/?batch_status='+Date.now(),{cache:'no-store'});
+      if(!res.ok)return;
+      const html=await res.text();
+      const doc=new DOMParser().parseFromString(html,'text/html');
+      const handled=new Set();
+      doc.querySelectorAll('form.queue-open-form input[name="slug"]').forEach(el=>{if(el.value)handled.add(el.value.trim())});
+      doc.querySelectorAll('a[href*="/guides/"]').forEach(a=>{const m=(a.getAttribute('href')||'').match(/\/guides\/([a-z0-9-]+)/i);if(m)handled.add(m[1])});
+      if(!handled.size)return;
+      const all=getDrafts();
+      const keep=all.filter(d=>{const slug=draftSlug(d);return !slug||!handled.has(slug)});
+      if(keep.length!==all.length){saveDrafts(keep);renderDrafts()}
+    }catch{}
+    finally{pruning=false}
+  }
 
   function ensureDestinationSelect(doc){let field=doc.querySelector('select[name="game"]');if(field)return field;const old=doc.querySelector('input[name="game"]');if(!old)return null;const current=old.value||'';const select=doc.createElement('select');select.name='game';select.id='game-destination';select.innerHTML=DESTINATIONS.map(([slug,label])=>`<option value="${slug}" ${current===slug?'selected':''}>${label}</option>`).join('');old.replaceWith(select);return select}
   function prepReviewHtml(html){
@@ -161,10 +192,11 @@
     const html=await res.text();if(!res.ok)throw new Error(`Server returned ${res.status}`);
     const doc=new DOMParser().parseFromString(html,'text/html');
     const title=doc.querySelector('.review-head h2')?.textContent?.trim()||r.title;
+    const slug=(doc.querySelector('input[name="slug"]')?.value||'').trim();
     const banner=doc.querySelector('.banner.bad');const bannerText=(banner?.textContent||'').replace(/\s+/g,' ').trim();
     const bodyText=(doc.querySelector('#body')?.value||'').trim();
     if(bannerText||!bodyText)throw new Error(bannerText||'Writer did not return an article body');
-    return{title,html}
+    return{title,slug,html}
   }
 
   topicsEl.addEventListener('input',()=>{const n=lines().length;countEl.textContent=`${n} topic${n===1?'':'s'}`;renderTopicLinks()});
@@ -188,14 +220,17 @@
     paint();let completed=0;
     for(let i=0;i<rows.length;i++){
       if(stopRequested)break;const r=rows[i];r.state='running';r.message=r.file?'Uploading image, then writing article…':'Writing article without an image…';paint();overall.textContent=`Generating ${i+1} of ${rows.length}`;
-      try{const result=await requestArticle(r,market);r.state='done';r.message=r.file?'Draft generated with image + alt — ready to proofread/publish.':'Draft generated without an image — ready to proofread/publish.';addDraft({id:'d'+Date.now()+i,title:result.title,game:r.game,gameLabel:destinationLabel(r.game),hasImage:Boolean(r.file),at:Date.now(),html:result.html});completed++}
+      try{const result=await requestArticle(r,market);r.state='done';r.message=r.file?'Draft generated with image + alt — ready to proofread/publish.':'Draft generated without an image — ready to proofread/publish.';addDraft({id:'d'+Date.now()+i,title:result.title,slug:result.slug,game:r.game,gameLabel:destinationLabel(r.game),hasImage:Boolean(r.file),at:Date.now(),html:result.html});completed++}
       catch(err){r.state='error';r.message=(err.message||String(err)).slice(0,300)}
       paint();if(i<rows.length-1&&!stopRequested){overall.textContent=`Moving to article ${i+2}…`;await sleep(4000)}
     }
     overall.textContent=stopRequested?`Stopped. ${completed} draft${completed===1?'':'s'} ready.`:`Finished. ${completed} of ${rows.length} drafts ready.`;running=false;generateBtn.disabled=false;stopBtn.disabled=true;stopBtn.textContent='Stop after current article';
   });
 
-  renderDrafts();topicsEl.dispatchEvent(new Event('input'));
+  window.addEventListener('focus',pruneHandledDrafts);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pruneHandledDrafts()});
+  setInterval(pruneHandledDrafts,15000);
+  renderDrafts();topicsEl.dispatchEvent(new Event('input'));pruneHandledDrafts();
 })();
 </script>
 </body>
