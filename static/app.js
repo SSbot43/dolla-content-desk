@@ -12,7 +12,7 @@
   const modeInputs = [...document.querySelectorAll('input[name="mode"]')];
   const manualOnly = [...document.querySelectorAll('.manual-only')];
   const generateOnly = [...document.querySelectorAll('.generate-only')];
-  const BATCH_STORE = 'dolla_batch_drafts_v1';
+  const BATCH_STORE = 'dolla_batch_drafts_v2';
 
   function currentMode() {
     return modeInputs.find(x => x.checked)?.value || 'generate';
@@ -50,8 +50,6 @@
     const right = cleanTopicText(raw.slice(colon + 1));
     const leftWords = left.split(/\s+/).filter(Boolean).length;
 
-    // Only auto-split when the user has clearly pasted a topic + explanatory sentence,
-    // not a normal short SEO title containing a colon.
     const looksLikeTopicBrief =
       right.length >= 55 &&
       left.length >= 8 &&
@@ -100,41 +98,54 @@
   }
 
   function removeApprovedBatchDraft() {
-    // Only remove a saved batch draft after the server has returned a real success banner.
-    // This covers both Queue & Push and Publish & Push while keeping failed attempts available.
-    if (!document.querySelector('.banner.ok')) return;
+    const okBanner = document.querySelector('.banner.ok');
+    if (!okBanner) return;
+
+    const message = (okBanner.textContent || '').toLowerCase();
+    const wasQueued = message.includes('queued') || message.includes('published');
+    if (!wasQueued) return;
+
     const slug = (slugInput?.value || '').trim();
     if (!slug) return;
 
     try {
       const drafts = JSON.parse(localStorage.getItem(BATCH_STORE) || '[]');
-      if (!Array.isArray(drafts) || !drafts.length) return;
-      const parser = new DOMParser();
-      const kept = drafts.filter(draft => {
-        if (!draft?.html) return true;
-        try {
-          const doc = parser.parseFromString(draft.html, 'text/html');
-          const draftSlug = (doc.querySelector('#slug')?.value || doc.querySelector('input[name="slug"]')?.value || '').trim();
-          return draftSlug !== slug;
-        } catch {
-          return true;
-        }
-      });
-      if (kept.length === drafts.length) return;
-      localStorage.setItem(BATCH_STORE, JSON.stringify(kept));
-
-      // Review tabs are opened from the batch page. Refresh the opener so the completed card
-      // disappears immediately instead of waiting for the user to refresh manually.
-      try {
-        if (window.opener && !window.opener.closed && window.opener.location.origin === window.location.origin) {
-          window.opener.location.reload();
-        }
-      } catch {
-        // Ignore cross-window/browser restrictions; the saved list is still cleaned up.
+      if (Array.isArray(drafts) && drafts.length) {
+        const kept = drafts.filter(draft => {
+          if ((draft?.slug || '').trim() === slug) return false;
+          if ((draft?.brief?.slug || '').trim() === slug) return false;
+          if (!draft?.html) return true;
+          try {
+            const doc = new DOMParser().parseFromString(draft.html, 'text/html');
+            const draftSlug = (doc.querySelector('#slug')?.value || doc.querySelector('input[name="slug"]')?.value || '').trim();
+            return draftSlug !== slug;
+          } catch {
+            return true;
+          }
+        });
+        localStorage.setItem(BATCH_STORE, JSON.stringify(kept));
       }
     } catch {
-      // Never let local batch bookkeeping interfere with the review/publish page itself.
+      // Batch bookkeeping must never break queueing.
     }
+
+    try {
+      if (window.opener && !window.opener.closed && window.opener.location.origin === window.location.origin) {
+        window.opener.location.reload();
+        window.opener.focus();
+      }
+    } catch {
+      // Browser may block opener access. localStorage cleanup above is still shared across tabs.
+    }
+
+    // Review tabs are disposable. Close after a successful queue/publish. If the browser refuses
+    // to close the tab, turn this tab back into the batch screen so review never strands the user.
+    setTimeout(() => {
+      try { window.close(); } catch {}
+      setTimeout(() => {
+        if (!window.closed) window.location.replace('/static/batch.html');
+      }, 350);
+    }, 250);
   }
 
   document.addEventListener('paste', event => {
