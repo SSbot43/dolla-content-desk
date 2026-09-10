@@ -16,9 +16,11 @@ from pathlib import Path
 import app as desk
 from immediate_publish import install as install_publish_policy
 from manual_override import install as install_manual_override
+from review_state_fix import install as install_review_state_fix
 
 install_publish_policy(desk)
 install_manual_override(desk)
+install_review_state_fix(desk)
 app = desk.app
 
 SYNC_SECONDS = int(os.environ.get("CONTENT_SYNC_SECONDS", "45"))
