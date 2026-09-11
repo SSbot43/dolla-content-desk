@@ -14,6 +14,9 @@ except Exception:
 
 ROOT = Path(__file__).resolve().parent
 if load_dotenv:
+    # Reuse shared AI-provider keys from the existing Dolla desk, then let the
+    # Keys-Shop-specific file override only site credentials/settings.
+    load_dotenv(ROOT / ".env", override=False)
     load_dotenv(ROOT / ".env.keys-shop", override=True)
 
 from content_os.adapters.wordpress_bridge import ContentBridgeClient, ContentBridgeError
