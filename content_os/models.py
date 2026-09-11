@@ -2,6 +2,20 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 
 @dataclass
+class LinkTarget:
+    id: int | str
+    kind: str
+    title: str
+    url: str
+    slug: str = ""
+    sku: str = ""
+    category: str = ""
+    status: str = "publish"
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+@dataclass
 class ContentItem:
     slug: str
     title: str
@@ -19,6 +33,8 @@ class ContentItem:
     featured_media_id: int | None = None
     featured_image_path: str = ""
     internal_links: list[str] = field(default_factory=list)
+    primary_target: LinkTarget | None = None
+    supporting_targets: list[LinkTarget] = field(default_factory=list)
     gate_override: bool = False
     override_reason: str = ""
 
