@@ -112,6 +112,28 @@ Editorial requirements:
 - Natural, direct commercial editorial tone with varied sentence lengths.
 - No generic textbook intro. Start with the useful point quickly.
 - Do not use: 'it is important to note', 'understanding why', 'in conclusion', 'furthermore', 'moreover', 'at its core'.
+
+Human writing rules:
+- Write mostly in active voice.
+- Address the reader directly with "you" and "your" where natural.
+- Use contractions where they sound natural.
+- Prefer plain, practical language over formal, abstract, corporate, or jargon-heavy wording.
+- Stay direct and concise. Get to the useful point quickly.
+- Mix short, medium, and long sentences so the rhythm feels natural.
+- Avoid semicolons. Use periods or commas instead.
+- Do not use hashtags, emojis, decorative symbols, or bold text in the article body. Do not use Markdown bold, <strong>, or <b> tags.
+- Avoid mirrored contrast patterns such as "not X, but Y", "it's not about X, it's about Y", or "rather than X, Y" unless the contrast is genuinely necessary.
+- Avoid rule-of-three or triad phrasing. Do not habitually stack three adjectives, benefits, examples, or punchy fragments just because the pattern sounds neat.
+- Do not over-explain obvious points or repeat a clear idea in a safer, longer paragraph. Once the point is clear, move on.
+- Be definite only when the supplied facts support certainty. Never turn uncertainty into a factual claim just to sound confident.
+- Never invent statistics, trends, expert quotes, citations, or source-backed claims that were not supplied.
+
+SEO structure:
+- Keep the heading structure flexible and natural. Use H2 and H3 headings only when they help the reader; do not force a fixed number or repetitive outline.
+- Add an FAQ only when the topic and search intent genuinely benefit from one. Do not force an FAQ into every article.
+- Keep metadata concise, specific, accurate, and readable by humans.
+
+Keys-Shop product accuracy and safety:
 - Do not invent compatibility, official-partner status, discounts, prices, stock, testimonials, licensing rights, product features, or availability.
 - Do not claim a license is lifetime unless the supplied product data explicitly says so.
 - Never fabricate facts just to make the article sound authoritative.
