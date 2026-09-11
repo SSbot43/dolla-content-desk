@@ -29,8 +29,9 @@
             <input id="target-search" placeholder="Search products, SKU or category — e.g. office, claude, kaspersky">
             <div id="target-results" class="target-results" style="display:none"></div>
           </div>
-          <input type="hidden" name="primary_target" id="primary-target" value='{{ item.primary_target.to_dict()|tojson if item.primary_target else "" }}'>
-          <input type="hidden" name="supporting_targets" id="supporting-targets" value='{{ item.supporting_targets|map(attribute="to_dict")|list|tojson }}'>
+          {% set item_dict = item.to_dict() %}
+          <input type="hidden" name="primary_target" id="primary-target" value='{{ (item_dict["primary_target"] if item.primary_target else "")|tojson }}'>
+          <input type="hidden" name="supporting_targets" id="supporting-targets" value='{{ item_dict["supporting_targets"]|tojson }}'>
           <div id="primary-display" class="selected-target" {% if not item.primary_target %}style="display:none"{% endif %}>
             {% if item.primary_target %}<strong>{{ item.primary_target.title }}</strong><div class="tiny">Primary destination · {{ item.primary_target.kind }} · {{ item.primary_target.url }}</div>{% endif %}
           </div>
