@@ -80,10 +80,12 @@ def item_from_ai(data: dict, primary: dict | None, supporting: list[dict] | None
     p = LinkTarget(**{k: (primary or {}).get(k, "") for k in LinkTarget.__dataclass_fields__}) if primary else None
     supports = [LinkTarget(**{k: x.get(k, "") for k in LinkTarget.__dataclass_fields__}) for x in (supporting or [])]
     links = [x.url for x in ([p] if p else []) + supports if x and x.url]
+    generated_body = str(data.get("body_html") or data.get("body_md") or data.get("body") or "").strip()
     return ContentItem(
         slug=str(data.get("slug") or slugify(str(data.get("title") or ""))),
         title=str(data.get("title") or ""),
-        body_html=str(data.get("body_html") or ""),
+        body_html=generated_body,
+        body_md=generated_body,
         meta_title=str(data.get("meta_title") or ""),
         meta_description=str(data.get("meta_description") or ""),
         primary_keyword=str(data.get("primary_keyword") or ""),
