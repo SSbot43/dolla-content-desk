@@ -97,6 +97,50 @@ def item_from_ai(data: dict, primary: dict | None, supporting: list[dict] | None
     )
 
 
+def _support_search_terms(title: str, primary: dict | None) -> list[str]:
+    terms: list[str] = []
+    if primary:
+        for value in (primary.get("title"), primary.get("category"), primary.get("sku")):
+            value = str(value or "").strip()
+            if len(value) >= 2 and value not in terms:
+                terms.append(value)
+    words = re.findall(r"[A-Za-z0-9+#.-]{3,}", title or "")
+    stop = {"how", "what", "with", "from", "this", "that", "your", "before", "after", "which", "guide", "best", "choose", "practical", "buyer", "buyers", "checklist"}
+    for word in words:
+        if word.lower() in stop:
+            continue
+        if word not in terms:
+            terms.append(word)
+        if len(terms) >= 5:
+            break
+    return terms[:5]
+
+
+def auto_supporting_targets(title: str, primary: dict | None, limit: int = 3) -> list[dict]:
+    """Find a few real related product/category URLs for natural internal linking."""
+    client = bridge()
+    primary_url = str((primary or {}).get("url") or "").rstrip("/")
+    seen = {primary_url} if primary_url else set()
+    found: list[dict] = []
+
+    for term in _support_search_terms(title, primary):
+        if len(found) >= limit:
+            break
+        try:
+            rows = client.search_products(term, limit=8) + client.search_categories(term, limit=5)
+        except Exception:
+            continue
+        for row in rows:
+            url = str(row.get("url") or "").rstrip("/")
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            found.append(row)
+            if len(found) >= limit:
+                break
+    return found
+
+
 def wp_payload(item: ContentItem, status: str) -> dict:
     return {
         "title": item.title,
@@ -106,6 +150,7 @@ def wp_payload(item: ContentItem, status: str) -> dict:
         "status": status,
         "meta_title": item.meta_title,
         "meta_description": item.meta_description,
+        "focus_keyword": item.primary_keyword,
     }
 
 
@@ -174,12 +219,14 @@ def api_generate_article():
     if not title:
         return jsonify({"error": "Title is required"}), 400
     try:
-        article, provider = generate_article(title, data.get("target"), data.get("supporting") or [])
-        item = item_from_ai(article, data.get("target"), data.get("supporting") or [])
+        supporting = data.get("supporting") or auto_supporting_targets(title, data.get("target"), limit=3)
+        article, provider = generate_article(title, data.get("target"), supporting)
+        item = item_from_ai(article, data.get("target"), supporting)
         gate = quality_run(item, known_urls=set(item.internal_links))
         return jsonify({
             "article": article,
             "provider": provider,
+            "supporting": supporting,
             "gate_ok": gate.ok,
             "issues": [{"code": i.code, "detail": i.detail, "blocking": i.blocking} for i in gate.issues],
         })
