@@ -3,9 +3,11 @@ import os
 import sys
 from pathlib import Path
 
+ENV_FILE = Path(__file__).resolve().parent / ".env.keys-shop"
+
 try:
     from dotenv import load_dotenv
-    load_dotenv(Path(__file__).resolve().parent / ".env")
+    load_dotenv(ENV_FILE, override=True)
 except Exception:
     pass
 
@@ -15,7 +17,7 @@ from content_os.adapters.wordpress import WordPressError
 required = ["KEYS_WP_URL", "KEYS_WP_USERNAME", "KEYS_WP_APP_PASSWORD"]
 missing = [k for k in required if not os.environ.get(k, "").strip()]
 if missing:
-    print("FAILED: missing from .env: " + ", ".join(missing))
+    print(f"FAILED: missing from {ENV_FILE.name}: " + ", ".join(missing))
     sys.exit(1)
 
 try:
