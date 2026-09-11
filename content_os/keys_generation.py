@@ -49,7 +49,7 @@ def _call_ai(prompt: str):
         except Exception as exc:
             raise GenerationError(f"Gemini failed and OpenAI fallback failed: {exc}") from exc
 
-    raise GenerationError("No working GEMINI_API_KEY or OPENAI_API_KEY is available in .env.keys-shop")
+    raise GenerationError("No working GEMINI_API_KEY or OPENAI_API_KEY is available to the Keys-Shop desk")
 
 
 def _target_context(target: dict | None) -> str:
@@ -101,7 +101,7 @@ def generate_article(title: str, target: dict | None, supporting: list[dict] | N
 Primary destination:
 {_target_context(target)}
 
-Optional supporting internal links:
+Verified supporting internal links:
 {support_text}
 
 Return ONLY one JSON object with these keys:
@@ -115,10 +115,13 @@ Editorial requirements:
 - Do not invent compatibility, official-partner status, discounts, prices, stock, testimonials, licensing rights, product features, or availability.
 - Do not claim a license is lifetime unless the supplied product data explicitly says so.
 - Never fabricate facts just to make the article sound authoritative.
-- If the primary destination is relevant, include its exact supplied URL naturally once or twice.
-- Supporting URLs may be used only when genuinely relevant.
+- When the primary destination is relevant, include its exact supplied URL naturally at least once, with descriptive anchor text rather than a naked URL.
+- Use 1-3 verified supporting internal links when they genuinely fit the article. Do not force irrelevant links.
+- Never invent an internal URL; use only the exact URLs supplied above.
+- Spread internal links naturally through useful sentences; do not dump them into a spammy link list.
 - Use clean HTML paragraphs and h2/h3 headings in body_html; no H1 inside the body.
 - Meta title should normally fit about 60 characters; meta description about 150-160 characters.
+- primary_keyword should be the single best Yoast focus keyphrase for this article.
 - The article should help a reader make a buying/use decision and should not read like mass-produced SEO filler.
 """
     data, provider = _call_ai(prompt)
