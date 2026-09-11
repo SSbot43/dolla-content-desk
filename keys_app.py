@@ -60,11 +60,12 @@ def build_item(form) -> ContentItem:
         pass
 
     internal_links = [t.url for t in ([primary] if primary else []) + supporting if t and t.url]
+    body = (form.get("body") or "").strip()
     return ContentItem(
         slug=(form.get("slug") or "").strip() or slugify(title),
         title=title,
-        body_html=(form.get("body_html") or "").strip(),
-        body_md=(form.get("body") or "").strip(),
+        body_html=(form.get("body_html") or body).strip(),
+        body_md=body,
         meta_title=(form.get("meta_title") or "").strip(),
         meta_description=(form.get("meta_description") or "").strip(),
         primary_keyword=(form.get("primary_keyword") or "").strip(),
@@ -94,6 +95,18 @@ def item_from_ai(data: dict, primary: dict | None, supporting: list[dict] | None
         primary_target=p,
         supporting_targets=supports,
     )
+
+
+def wp_payload(item: ContentItem, status: str) -> dict:
+    return {
+        "title": item.title,
+        "slug": item.slug,
+        "content": item.body_html or item.body_md,
+        "excerpt": item.excerpt or item.meta_description,
+        "status": status,
+        "meta_title": item.meta_title,
+        "meta_description": item.meta_description,
+    }
 
 
 @app.get("/")
@@ -174,6 +187,58 @@ def api_generate_article():
         return jsonify({"error": str(exc)}), 400
 
 
+@app.post("/api/bulk-publish")
+def api_bulk_publish():
+    data = request.get_json(silent=True) or {}
+    rows = data.get("items") or []
+    if not isinstance(rows, list) or not rows:
+        return jsonify({"error": "No articles selected."}), 400
+    if len(rows) > 100:
+        return jsonify({"error": "Maximum 100 articles per bulk publish."}), 400
+
+    client = bridge()
+    results = []
+    published = 0
+    skipped = 0
+
+    for row in rows:
+        try:
+            article = row.get("article") or {}
+            primary = row.get("target")
+            supporting = row.get("supporting") or []
+            item = item_from_ai(article, primary, supporting)
+            gate = quality_run(item, known_urls=set(item.internal_links))
+            if not gate.ok:
+                skipped += 1
+                results.append({
+                    "slug": item.slug,
+                    "title": item.title,
+                    "status": "blocked",
+                    "error": "; ".join(i.detail for i in gate.blocking),
+                })
+                continue
+
+            created = client.create_post(wp_payload(item, "publish"))
+            published += 1
+            results.append({
+                "slug": item.slug,
+                "title": item.title,
+                "status": "published",
+                "post_id": created.get("id"),
+                "url": created.get("url"),
+            })
+        except Exception as exc:
+            skipped += 1
+            results.append({
+                "slug": str((row.get("article") or {}).get("slug") or ""),
+                "title": str((row.get("article") or {}).get("title") or "Untitled"),
+                "status": "error",
+                "error": str(exc),
+            })
+
+    return jsonify({"published": published, "skipped": skipped, "results": results})
+
+
 @app.post("/create-draft")
 def create_draft():
     item = build_item(request.form)
@@ -181,16 +246,7 @@ def create_draft():
     if not result.ok:
         return render_template("keys_review.html", item=item, result=result, notice="", error="Draft blocked by quality gate."), 400
 
-    payload = {
-        "title": item.title,
-        "slug": item.slug,
-        "content": item.body_html or item.body_md,
-        "excerpt": item.excerpt or item.meta_description,
-        "status": "draft",
-        "meta_title": item.meta_title,
-        "meta_description": item.meta_description,
-    }
-    created = bridge().create_post(payload)
+    created = bridge().create_post(wp_payload(item, "draft"))
     return render_template(
         "keys_review.html",
         item=item,
