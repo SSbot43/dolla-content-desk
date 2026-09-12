@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Keys-Shop Batch — Content Desk</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .wrap{max-width:1320px;margin:0 auto;padding:26px 24px 60px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:18px}.results{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:8px}.result{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}.result:last-child{border-bottom:0}.result:hover{background:#131b23}.tiny{font-size:12px;color:var(--muted)}.selected{border:1px solid var(--ok);border-radius:10px;padding:10px 12px;margin-top:10px}.draft-list,.progress{display:flex;flex-direction:column;gap:9px;margin-top:12px}.draft,.prog{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#0e141b}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.between{display:flex;justify-content:space-between;gap:12px;align-items:center}.status{font-size:11px;text-transform:uppercase;font-weight:800;letter-spacing:.06em}.ok{color:var(--ok)}.bad{color:var(--bad)}textarea{min-height:150px}.bulkbar{position:sticky;top:8px;z-index:3;background:#111922;border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0 14px}.draft-check{width:18px;height:18px;margin-right:9px}.publish-result{margin-top:8px;font-size:12px}.publish-result.ok{color:var(--ok)}.publish-result.bad{color:var(--bad)}@media(max-width:900px){.grid2{grid-template-columns:1fr}.wrap{padding:18px 12px 40px}}
+  </style>
+</head>
+<body>
+<header><div><div class="eyebrow">Keys-Shop Content OS</div><h1>Batch generator</h1></div><div class="header-actions"><a class="btn ghost" href="/">Single article</a></div></header>
+<main class="wrap">
+  <section class="hero-strip"><div><div class="eyebrow">Up to 100 articles</div><h2>Pick the product once, then build the whole content batch around it.</h2><p>Gemini first, OpenAI fallback. Articles generate one-by-one and are saved in this browser for review.</p></div><div class="system-pills"><span class="pill ok">Product anchored</span><span class="pill">Sequential</span><span class="pill">Gate checked</span></div></section>
+  <div class="grid2" style="margin-top:16px">
+    <section class="card">
+      <h2>1. Choose product/category</h2>
+      <input id="search" placeholder="Search products, SKU or category — e.g. office, claude">
+      <div id="results" class="results" style="display:none"></div>
+      <div id="selected" class="selected" style="display:none"></div>
+
+      <h2 style="margin-top:22px">2. Generate topics</h2>
+      <div class="grid two"><label>How many?<input id="count" type="number" min="1" max="100" value="20"></label><label>Optional direction<input id="seed" placeholder="e.g. focus on buyers, setup and comparisons"></label></div>
+      <div class="row"><button class="btn primary" id="gen-topics">Generate topic ideas</button><span id="topic-provider" class="tiny"></span></div>
+      <textarea id="topics" placeholder="Generated topics appear here, one per line. You can edit them before generating articles."></textarea>
+      <div class="tiny" id="topic-count">0 topics</div>
+
+      <h2 style="margin-top:22px">3. Generate articles</h2>
+      <div class="note-box"><strong>Safe batch mode:</strong> one AI article at a time. Completed drafts stay saved even if you stop.</div>
+      <div class="row"><button class="btn primary" id="gen-articles">Generate articles →</button><button class="btn secondary" id="stop" disabled>Stop after current</button><span id="overall" class="tiny"></span></div>
+      <div class="progress" id="progress"></div>
+    </section>
+
+    <aside class="card">
+      <div class="between"><h2>Ready to review</h2><button class="btn ghost" id="clear">Clear drafts</button></div>
+      <p class="tiny">PASS/BLOCKED is from the Keys-Shop quality gate. You can still open any article individually before mass publishing.</p>
+      <div class="bulkbar">
+        <div class="between"><strong id="summary">0 drafts</strong><span class="tiny">Only PASS articles can publish</span></div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn ghost" id="check-pass" type="button">Check all PASS</button>
+          <button class="btn ghost" id="uncheck" type="button">Uncheck all</button>
+          <button class="btn primary" id="publish-checked" type="button">Publish checked</button>
+          <button class="btn secondary" id="publish-all-pass" type="button">Publish all PASS</button>
+        </div>
+        <div id="publish-status" class="tiny" style="margin-top:8px"></div>
+      </div>
+      <div id="drafts" class="draft-list"></div>
+    </aside>
+  </div>
+</main>
+<script>
+(() => {
+  const STORE='keys_batch_drafts_v1', PLAN='keys_batch_plan_v1';
+  const search=document.getElementById('search'), results=document.getElementById('results'), selected=document.getElementById('selected'), topics=document.getElementById('topics'), count=document.getElementById('count'), seed=document.getElementById('seed'), draftsEl=document.getElementById('drafts'), progress=document.getElementById('progress'), overall=document.getElementById('overall'), publishStatus=document.getElementById('publish-status'), summary=document.getElementById('summary');
+  let target=null, timer=null, running=false, stopRequested=false;
+  function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function lines(){return topics.value.split(/\n+/).map(x=>x.trim()).filter(Boolean).slice(0,100)}
+  function savePlan(){localStorage.setItem(PLAN,JSON.stringify({target,topics:topics.value,count:count.value,seed:seed.value}))}
+  function loadPlan(){try{const p=JSON.parse(localStorage.getItem(PLAN)||'{}');target=p.target||null;topics.value=p.topics||'';count.value=p.count||20;seed.value=p.seed||'';renderSelected();updateCount()}catch{}}
+  function getDrafts(){try{return JSON.parse(localStorage.getItem(STORE)||'[]')}catch{return[]}}
+  function saveDrafts(v){localStorage.setItem(STORE,JSON.stringify(v.slice(0,120)));renderDrafts()}
+  function addDraft(d){const all=getDrafts().filter(x=>x.article.slug!==d.article.slug);all.unshift(d);saveDrafts(all)}
+  function updateCount(){document.getElementById('topic-count').textContent=`${lines().length} topics`;savePlan()}
+  function renderSelected(){if(!target){selected.style.display='none';selected.innerHTML='';return}selected.style.display='block';selected.innerHTML=`<strong>${esc(target.title)}</strong><div class="tiny">${esc(target.kind)}${target.sku?' · SKU '+esc(target.sku):''}<br>${esc(target.url)}</div>`}
+  function renderDrafts(){const all=getDrafts();summary.textContent=`${all.length} drafts · ${all.filter(d=>d.gate_ok).length} PASS`;if(!all.length){draftsEl.innerHTML='<div class="muted">No generated drafts yet.</div>';return}draftsEl.innerHTML=all.map((d,i)=>`<div class="draft"><div class="between"><div style="display:flex;align-items:flex-start"><input class="draft-check" type="checkbox" data-i="${i}" ${d.gate_ok?'':'disabled'}><div><strong>${esc(d.article.title)}</strong><div class="tiny">${esc(d.provider||'AI')} · ${esc(d.article.primary_keyword||'')}${d.supporting?.length?` · ${d.supporting.length} related links`:''}</div></div></div><span class="status ${d.gate_ok?'ok':'bad'}">${d.gate_ok?'PASS':'BLOCKED'}</span></div>${d.issues?.length?`<div class="tiny bad">${d.issues.filter(x=>x.blocking).map(x=>esc(x.detail)).join(' · ')}</div>`:''}<form method="post" action="/review-generated" target="_blank" style="margin-top:8px"><input type="hidden" name="article_json" value='${esc(JSON.stringify(d.article))}'><input type="hidden" name="primary_target" value='${esc(JSON.stringify(d.target||null))}'><input type="hidden" name="supporting_targets" value='${esc(JSON.stringify(d.supporting||[]))}'><button class="btn secondary" type="submit">Open review</button></form></div>`).join('')}
+
+  search.addEventListener('input',()=>{clearTimeout(timer);const q=search.value.trim();if(q.length<2){results.style.display='none';return}timer=setTimeout(async()=>{results.style.display='block';results.innerHTML='<div class="result">Searching…</div>';try{const r=await fetch('/api/targets?q='+encodeURIComponent(q));const data=await r.json();if(!Array.isArray(data))throw new Error(data.error||'Search failed');results.innerHTML=data.map((t,i)=>`<div class="result" data-i="${i}"><div class="tiny">${esc(t.kind)}${t.sku?' · SKU '+esc(t.sku):''}</div><strong>${esc(t.title)}</strong><div class="tiny">${esc(t.category||t.url)}</div></div>`).join('')||'<div class="result">No matches.</div>';[...results.querySelectorAll('[data-i]')].forEach(el=>el.onclick=()=>{target=data[Number(el.dataset.i)];renderSelected();results.style.display='none';savePlan()})}catch(e){results.innerHTML='<div class="result">'+esc(e.message)+'</div>'}},250)});
+
+  document.getElementById('gen-topics').onclick=async()=>{const btn=document.getElementById('gen-topics');btn.disabled=true;document.getElementById('topic-provider').textContent='Generating…';try{const r=await fetch('/api/generate-topics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,count:Number(count.value||20),seed:seed.value})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Topic generation failed');topics.value=data.topics.join('\n');document.getElementById('topic-provider').textContent=`Generated with ${data.provider}`;updateCount()}catch(e){document.getElementById('topic-provider').textContent=e.message}finally{btn.disabled=false}};
+
+  document.getElementById('gen-articles').onclick=async()=>{if(running)return;const list=lines();if(!list.length){alert('Generate or paste topics first.');return}running=true;stopRequested=false;document.getElementById('gen-articles').disabled=true;document.getElementById('stop').disabled=false;progress.innerHTML='';for(let i=0;i<list.length;i++){const title=list[i];const row=document.createElement('div');row.className='prog';row.innerHTML=`<div class="between"><strong>${esc(title)}</strong><span class="status">RUNNING</span></div>`;progress.prepend(row);overall.textContent=`Generating ${i+1} of ${list.length}`;try{const r=await fetch('/api/generate-article',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,target,supporting:[]})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Generation failed');addDraft({...data,target,supporting:data.supporting||[],created_at:Date.now()});row.querySelector('.status').textContent=data.gate_ok?'PASS':'BLOCKED';row.querySelector('.status').className='status '+(data.gate_ok?'ok':'bad')}catch(e){row.querySelector('.status').textContent='ERROR';row.querySelector('.status').className='status bad';row.insertAdjacentHTML('beforeend',`<div class="tiny bad">${esc(e.message)}</div>`)}if(stopRequested)break}running=false;document.getElementById('gen-articles').disabled=false;document.getElementById('stop').disabled=true;overall.textContent=stopRequested?'Stopped after current article.':'Batch generation finished.'};
+  document.getElementById('stop').onclick=()=>{stopRequested=true;document.getElementById('stop').disabled=true;overall.textContent='Will stop after current article…'};
+  document.getElementById('clear').onclick=()=>{if(confirm('Clear saved Keys-Shop batch drafts from this browser?')){localStorage.removeItem(STORE);renderDrafts()}};
+  document.getElementById('check-pass').onclick=()=>{document.querySelectorAll('.draft-check:not(:disabled)').forEach(x=>x.checked=true)};
+  document.getElementById('uncheck').onclick=()=>{document.querySelectorAll('.draft-check').forEach(x=>x.checked=false)};
+
+  async function bulkPublish(which){
+    const all=getDrafts();
+    let picked=[];
+    if(which==='all'){picked=all.filter(d=>d.gate_ok)}else{picked=[...document.querySelectorAll('.draft-check:checked')].map(x=>all[Number(x.dataset.i)]).filter(Boolean)}
+    if(!picked.length){alert('No PASS articles selected.');return}
+    if(!confirm(`Publish ${picked.length} article${picked.length===1?'':'s'} to Keys-Shop now?`))return;
+    document.getElementById('publish-checked').disabled=true;document.getElementById('publish-all-pass').disabled=true;publishStatus.textContent=`Publishing ${picked.length} article${picked.length===1?'':'s'}…`;
+    try{
+      const r=await fetch('/api/bulk-publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:picked})});
+      const data=await r.json();if(!r.ok)throw new Error(data.error||'Bulk publish failed');
+      const publishedSlugs=new Set((data.results||[]).filter(x=>x.status==='published').map(x=>x.slug));
+      saveDrafts(all.filter(d=>!publishedSlugs.has(d.article.slug)));
+      const errors=(data.results||[]).filter(x=>x.status!=='published');
+      publishStatus.innerHTML=`<span class="ok">Published ${data.published}</span>${errors.length?` · <span class="bad">${errors.length} skipped/failed</span>`:''}`;
+      if(errors.length)console.warn('Bulk publish issues',errors);
+    }catch(e){publishStatus.innerHTML=`<span class="bad">${esc(e.message)}</span>`}
+    finally{document.getElementById('publish-checked').disabled=false;document.getElementById('publish-all-pass').disabled=false}
+  }
+  document.getElementById('publish-checked').onclick=()=>bulkPublish('checked');
+  document.getElementById('publish-all-pass').onclick=()=>bulkPublish('all');
+  topics.addEventListener('input',updateCount);count.addEventListener('change',savePlan);seed.addEventListener('input',savePlan);
+  loadPlan();renderDrafts();
+})();
+</script>
+</body>
+</html>

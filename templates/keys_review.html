@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Keys-Shop Content Desk</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .target-search{position:relative}.target-results{border:1px solid #333;border-radius:8px;margin-top:8px;overflow:hidden}.target-row{padding:10px 12px;border-bottom:1px solid #222;cursor:pointer}.target-row:last-child{border-bottom:0}.target-row:hover{background:#181818}.target-kind{font-size:11px;text-transform:uppercase;opacity:.65}.selected-target{padding:10px 12px;border:1px solid #2f6;border-radius:8px;margin-top:8px}.support-chip{display:inline-block;padding:6px 9px;border:1px solid #555;border-radius:999px;margin:4px 4px 0 0}.tiny{font-size:12px;opacity:.7}
+  </style>
+</head>
+<body>
+<header><div><div class="eyebrow">Keys-Shop Content OS</div><h1>Review article</h1></div></header>
+<main class="page">
+  {% if error %}<div class="banner bad"><strong>Needs attention</strong><span>{{ error }}</span></div>{% endif %}
+  {% if notice %}<div class="banner ok"><strong>Success</strong><span>{{ notice }}</span></div>{% endif %}
+  <div class="review-grid">
+    <section class="panel">
+      <div class="panel-title">Article + destination</div>
+      <form method="post" action="/review" id="keys-form" class="editor-card compact">
+        <div class="grid two"><label>Primary keyword<input name="primary_keyword" value="{{ item.primary_keyword }}"></label><label>Slug<input name="slug" value="{{ item.slug }}"></label></div>
+        <label>Title<input name="title" value="{{ item.title }}" required></label>
+        <div class="grid two"><label>SEO title<input name="meta_title" value="{{ item.meta_title }}"></label><label>Meta description<input name="meta_description" value="{{ item.meta_description }}"></label></div>
+        <label>Excerpt<input name="excerpt" value="{{ item.excerpt }}"></label>
+
+        <div class="panel" style="margin-top:12px">
+          <div class="panel-title">Link to product / category</div>
+          <div class="target-search">
+            <input id="target-search" placeholder="Search products, SKU or category — e.g. office, claude, kaspersky">
+            <div id="target-results" class="target-results" style="display:none"></div>
+          </div>
+          {% set item_dict = item.to_dict() %}
+          <input type="hidden" name="primary_target" id="primary-target" value='{{ (item_dict["primary_target"] if item.primary_target else "")|tojson }}'>
+          <input type="hidden" name="supporting_targets" id="supporting-targets" value='{{ item_dict["supporting_targets"]|tojson }}'>
+          <div id="primary-display" class="selected-target" {% if not item.primary_target %}style="display:none"{% endif %}>
+            {% if item.primary_target %}<strong>{{ item.primary_target.title }}</strong><div class="tiny">Primary destination · {{ item.primary_target.kind }} · {{ item.primary_target.url }}</div>{% endif %}
+          </div>
+          <div class="tiny" style="margin-top:8px">Click a result once to make it the primary destination. Use “Add supporting” for extra internal links.</div>
+          <div id="supporting-display">
+            {% for t in item.supporting_targets %}<span class="support-chip">{{ t.title }}</span>{% endfor %}
+          </div>
+        </div>
+
+        <label>Article body / Markdown<textarea name="body" rows="24">{{ item.body_md }}</textarea></label>
+        <button class="btn secondary" type="submit">Re-run Quality Gate</button>
+        <button class="btn primary" type="submit" formaction="/create-draft" onclick="return confirm('Create this as a private WordPress draft?')">Create WordPress Draft</button>
+      </form>
+    </section>
+    <aside class="panel gate-panel"><div class="panel-title">Keys-Shop quality gate</div>
+      {% if result.issues %}{% for i in result.issues %}<div class="issue {{ 'error' if i.blocking else 'warn' }}"><strong>{{ i.code }}</strong><span>{{ i.detail }}</span></div>{% endfor %}{% else %}<div class="empty-good">No quality issues found.</div>{% endif %}
+      <div class="publish-box"><strong>{{ 'PASS' if result.ok else 'BLOCKED' }}</strong><p>{% if result.ok %}Ready for a WordPress draft. Queue/publish controls come next.{% else %}Fix the blocking issues before creating a draft.{% endif %}</p></div>
+    </aside>
+  </div>
+</main>
+<script>
+(() => {
+  const search=document.getElementById('target-search');
+  const results=document.getElementById('target-results');
+  const primary=document.getElementById('primary-target');
+  const primaryDisplay=document.getElementById('primary-display');
+  const supporting=document.getElementById('supporting-targets');
+  const supportingDisplay=document.getElementById('supporting-display');
+  let timer=null;
+  let support=[];
+  try{ support=JSON.parse(supporting.value||'[]') }catch{}
+
+  function renderSupport(){
+    supportingDisplay.innerHTML='';
+    support.forEach((t,i)=>{
+      const chip=document.createElement('span'); chip.className='support-chip';
+      chip.textContent=t.title+' ×'; chip.title='Click to remove';
+      chip.onclick=()=>{support.splice(i,1);supporting.value=JSON.stringify(support);renderSupport()};
+      supportingDisplay.appendChild(chip);
+    });
+  }
+  function choosePrimary(t){
+    primary.value=JSON.stringify(t);
+    primaryDisplay.style.display='block';
+    primaryDisplay.innerHTML=`<strong>${escapeHtml(t.title)}</strong><div class="tiny">Primary destination · ${escapeHtml(t.kind)} · ${escapeHtml(t.url)}</div>`;
+  }
+  function addSupport(t){
+    if(!support.some(x=>String(x.id)===String(t.id)&&x.kind===t.kind)) support.push(t);
+    supporting.value=JSON.stringify(support); renderSupport();
+  }
+  function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+  search.addEventListener('input',()=>{
+    clearTimeout(timer); const q=search.value.trim();
+    if(q.length<2){results.style.display='none';return}
+    timer=setTimeout(async()=>{
+      results.style.display='block'; results.innerHTML='<div class="target-row">Searching…</div>';
+      try{
+        const r=await fetch('/api/targets?q='+encodeURIComponent(q)); const data=await r.json();
+        if(!Array.isArray(data)){throw new Error(data.error||'Search failed')}
+        results.innerHTML='';
+        data.forEach(t=>{
+          const row=document.createElement('div'); row.className='target-row';
+          row.innerHTML=`<div class="target-kind">${escapeHtml(t.kind)}${t.sku?' · SKU '+escapeHtml(t.sku):''}</div><strong>${escapeHtml(t.title)}</strong><div class="tiny">${escapeHtml(t.category||t.url)}</div><button type="button" class="btn ghost" style="margin-top:6px">Add supporting</button>`;
+          row.onclick=(e)=>{ if(e.target.tagName==='BUTTON'){e.stopPropagation();addSupport(t)} else choosePrimary(t) };
+          results.appendChild(row);
+        });
+        if(!data.length)results.innerHTML='<div class="target-row">No matches.</div>';
+      }catch(err){results.innerHTML='<div class="target-row">'+escapeHtml(err.message)+'</div>'}
+    },250);
+  });
+  renderSupport();
+})();
+</script>
+</body>
+</html>
