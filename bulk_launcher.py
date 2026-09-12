@@ -1,13 +1,13 @@
 """Backward-compatible launcher for the Dolla Content Desk Flask app.
 
 All routes live in app.py so importing or running the app directly has the complete workflow.
-This launcher also keeps the local content repo in sync with GitHub while the desk is open.
+This launcher keeps the local content repo in sync with GitHub while the desk is open.
 
-Queue sync is semantic rather than line-based: scheduled GitHub publishing can remove live articles
-while the desktop may still have additional approved articles that have not reached GitHub yet.
-When the only local change is content/queue.json, the launcher merges local + remote by slug,
-removes anything already published remotely, updates the local dashboard state, and pushes any
-local-only queued articles safely. Other dirty local files are left completely alone.
+Scheduled publishing changes queue.json/published.json/static pages remotely. The local desk can also
+have approved queue entries or unrelated image/article edits that have not been pushed yet. Sync is
+therefore semantic: preserve local unpublished queue entries by slug, protect unrelated dirty files
+in a temporary stash, fast-forward/reset to origin/main, restore the merged queue, and then restore
+unrelated local work. Already-published slugs are never resurrected.
 """
 from __future__ import annotations
 
@@ -75,7 +75,6 @@ def _merge_queue(local_queue: list[dict], remote_queue: list[dict], remote_publi
     merged: list[dict] = []
     seen: set[str] = set()
 
-    # Keep GitHub's FIFO order, using the local reviewed copy when the same slug exists on both.
     for item in remote_queue:
         if not isinstance(item, dict):
             continue
@@ -85,7 +84,6 @@ def _merge_queue(local_queue: list[dict], remote_queue: list[dict], remote_publi
         merged.append(local_by_slug.get(slug, item))
         seen.add(slug)
 
-    # Then preserve articles that only exist on this PC, in their local order.
     for item in local_queue:
         if not isinstance(item, dict):
             continue
@@ -101,7 +99,7 @@ def _merge_queue(local_queue: list[dict], remote_queue: list[dict], remote_publi
 def _dirty_paths(repo: Path) -> list[str]:
     status = _git(repo, "status", "--porcelain")
     if status.returncode != 0:
-        return ["__git_error__"]
+        return []
     paths: list[str] = []
     for line in status.stdout.splitlines():
         raw = line[3:] if len(line) >= 4 else ""
@@ -112,74 +110,80 @@ def _dirty_paths(repo: Path) -> list[str]:
 
 
 def _sync_content_repo_once(repo: Path) -> None:
-    """Synchronise scheduled publisher changes without losing this PC's queued articles."""
+    """Merge local queued work with the latest scheduled-publisher state."""
     if not (repo / ".git").exists():
-        return
-
-    dirty = _dirty_paths(repo)
-    # If an image/article/etc. is being edited locally, do nothing. The normal queue push path has
-    # its own semantic merge and will protect that work later.
-    if any(path not in {"content/queue.json"} for path in dirty):
+        print(f"[Content Desk] sync skipped: no git repo at {repo}")
         return
 
     queue_path = repo / "content" / "queue.json"
     local_queue = _json_file(queue_path, [])
+    dirty = _dirty_paths(repo)
+    unrelated = [p for p in dirty if p != "content/queue.json"]
+    stashed = False
 
-    fetch = _git(repo, "fetch", "origin", "main")
-    if fetch.returncode != 0:
-        return
-
-    remote_queue = _remote_json(repo, "content/queue.json", [])
-    remote_published = _remote_json(repo, "content/published.json", {})
-
-    # A completely clean repo can just fast-forward. This is the common nightly-publisher case.
-    if not dirty:
-        pull = _git(repo, "pull", "--ff-only", "origin", "main")
-        if pull.returncode == 0:
+    # Protect any unrelated local edits rather than letting them block dashboard refresh forever.
+    if unrelated:
+        stash = _git(repo, "stash", "push", "-u", "-m", "dolla-dashboard-autostash", "--", *unrelated)
+        if stash.returncode != 0:
+            print("[Content Desk] sync skipped: could not protect local files:", stash.stderr.strip() or stash.stdout.strip())
             return
-        # If local history diverged despite a clean worktree, fall through to semantic recovery.
+        stashed = "No local changes" not in (stash.stdout or "")
 
-    merged = _merge_queue(local_queue, remote_queue, remote_published)
-
-    # Only queue.json is dirty, so reset is safe here. It updates published.json/static pages to the
-    # scheduled publisher's latest commit, then restores the merged unpublished queue.
-    reset = _git(repo, "reset", "--hard", "origin/main")
-    if reset.returncode != 0:
-        return
-
-    queue_path.parent.mkdir(parents=True, exist_ok=True)
-    queue_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8")
-
-    # If this PC had queued articles GitHub did not know about, persist the merged queue remotely.
-    if merged != remote_queue:
-        add = _git(repo, "add", "--", "content/queue.json")
-        if add.returncode != 0:
+    try:
+        fetch = _git(repo, "fetch", "origin", "main")
+        if fetch.returncode != 0:
+            print("[Content Desk] sync fetch failed:", fetch.stderr.strip() or fetch.stdout.strip())
             return
-        diff = _git(repo, "diff", "--cached", "--quiet")
-        if diff.returncode == 1:
-            commit = _git(repo, "commit", "-m", "Sync local queue with scheduled publisher")
-            if commit.returncode != 0:
-                return
-            push = _git(repo, "push", "origin", "main")
-            if push.returncode != 0:
-                # Keep the commit/local queue intact. The next normal queue operation can retry its
-                # semantic merge; never force-push here.
-                return
+
+        remote_queue = _remote_json(repo, "content/queue.json", [])
+        remote_published = _remote_json(repo, "content/published.json", {})
+        merged = _merge_queue(local_queue, remote_queue, remote_published)
+
+        reset = _git(repo, "reset", "--hard", "origin/main")
+        if reset.returncode != 0:
+            print("[Content Desk] sync reset failed:", reset.stderr.strip() or reset.stdout.strip())
+            return
+
+        queue_path.parent.mkdir(parents=True, exist_ok=True)
+        queue_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        if merged != remote_queue:
+            add = _git(repo, "add", "--", "content/queue.json")
+            if add.returncode == 0:
+                diff = _git(repo, "diff", "--cached", "--quiet")
+                if diff.returncode == 1:
+                    commit = _git(repo, "commit", "-m", "Sync local queue with scheduled publisher")
+                    if commit.returncode == 0:
+                        push = _git(repo, "push", "origin", "main")
+                        if push.returncode != 0:
+                            print("[Content Desk] queue sync push failed; local merge preserved:", push.stderr.strip() or push.stdout.strip())
+                        else:
+                            print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live")
+                    else:
+                        print("[Content Desk] sync commit failed:", commit.stderr.strip() or commit.stdout.strip())
+                else:
+                    print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live")
+        else:
+            print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live")
+    finally:
+        if stashed:
+            pop = _git(repo, "stash", "pop", "--index")
+            if pop.returncode != 0:
+                print("[Content Desk] WARNING: local files remain safe in git stash:", pop.stderr.strip() or pop.stdout.strip())
 
 
 def _sync_loop(repo: Path) -> None:
-    # Give Flask a moment to start, then keep checking quietly in the background.
     time.sleep(2)
     while True:
         try:
             _sync_content_repo_once(repo)
-        except Exception:
-            # Sync is convenience only; never take the local Content Desk down over Git/network.
-            pass
+        except Exception as exc:
+            print(f"[Content Desk] sync error: {exc}")
         time.sleep(max(15, SYNC_SECONDS))
 
 
 if __name__ == "__main__":
     content_repo = Path(os.environ.get("CONTENT_REPO", str(desk.CONTENT_REPO))).resolve()
+    print(f"[Content Desk] content repo: {content_repo}")
     threading.Thread(target=_sync_loop, args=(content_repo,), daemon=True).start()
     app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)), debug=True, use_reloader=False)
