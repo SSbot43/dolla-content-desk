@@ -20,6 +20,7 @@
 </header>
 
 <main class="page narrow">
+  {% if error %}<div class="banner bad"><strong>Check the destination</strong><span>{{ error }}</span></div>{% endif %}
   <form method="post" action="{{ url_for('feed') }}" enctype="multipart/form-data" class="editor-card" id="article-form">
     <div class="mode-tabs">
       <label class="mode-choice">
@@ -74,6 +75,10 @@
           {% endfor %}
         </select>
       </label>
+    </div>
+    <div class="grid two custom-game-fields" hidden>
+      <label>New game name<input name="custom_game_name" value="{{ prefill.custom_game_name or '' }}" placeholder="Tower of Fortune"></label>
+      <label>Game path on Dolla<input name="custom_game_path" value="{{ prefill.custom_game_path or '' }}" placeholder="tower or games/tower"><small>Path after dolla.fo/</small></label>
     </div>
 
     <div class="section-title">2. Hero image <small>optional</small></div>

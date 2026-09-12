@@ -24,6 +24,7 @@ from urllib.parse import urlparse
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
+from destinations import CUSTOM, clean_path, destinations
 
 try:
     from dotenv import load_dotenv
@@ -54,28 +55,6 @@ SITE_BASE = os.environ.get("SITE_BASE", "https://dollacasino.com").rstrip("/")
 APP_BASE = os.environ.get("APP_BASE", "https://dolla.fo").rstrip("/")
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif", "svg"}
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
-
-DESTINATIONS = [
-    {"slug": "", "label": "Dolla homepage / general"},
-    {"slug": "plinko", "label": "Plinko"},
-    {"slug": "mines", "label": "Mines"},
-    {"slug": "crash", "label": "Crash"},
-    {"slug": "voidrun", "label": "VOID Run"},
-    {"slug": "dice", "label": "Dice"},
-    {"slug": "limbo", "label": "Limbo"},
-    {"slug": "keno", "label": "Keno"},
-    {"slug": "hilo", "label": "Hi/Lo"},
-    {"slug": "slots", "label": "Slots"},
-    {"slug": "blackjack", "label": "Blackjack"},
-    {"slug": "roulette", "label": "Roulette"},
-    {"slug": "olympus", "label": "Gods of Olympus"},
-    {"slug": "inferno", "label": "Inferno Vault"},
-    {"slug": "bigscore", "label": "The Big Score"},
-    {"slug": "chariot", "label": "Chariot Race"},
-    {"slug": "penalty", "label": "Penalty Shooter"},
-    {"slug": "lucky7", "label": "Lucky 7"},
-    {"slug": "dond", "label": "Deal or No Deal"},
-]
 
 TREND_FEEDS = [
     (
@@ -149,13 +128,23 @@ def slugify(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")[:90]
 
 
-def destination_label(slug: str) -> str:
-    return next((d["label"] for d in DESTINATIONS if d["slug"] == slug), slug or "Dolla")
+def destination_label(slug: str, saved_label: str = "") -> str:
+    return saved_label or next((d["label"] for d in destinations() if d["slug"] == slug), slug or "Dolla")
 
 
 def brief_from_form(f) -> Brief:
     title = f.get("title", "").strip()
     slug = f.get("slug", "").strip() or slugify(title or f.get("keyword", ""))
+    game = f.get("game", "").strip()
+    game_label = f.get("game_label", "").strip()
+    if game == CUSTOM["slug"]:
+        game = clean_path(f.get("custom_game_path", ""))
+        game_label = f.get("custom_game_name", "").strip()
+        if not game_label or len(game_label) > 100:
+            raise ValueError("Enter a custom game name (up to 100 characters).")
+    elif game:
+        game = clean_path(game)
+        game_label = destination_label(game, game_label)
     return Brief(
         slug=slug,
         title=title,
@@ -164,7 +153,8 @@ def brief_from_form(f) -> Brief:
         body_md=f.get("body", "").strip(),
         primary_keyword=f.get("keyword", "").strip(),
         angle=f.get("angle", "").strip(),
-        game=f.get("game", "").strip(),
+        game=game,
+        game_label=game_label,
         target_market=f.get("market", "US").strip(),
         publish_date=f.get("publish_date", "").strip(),
         image=f.get("image", "").strip(),
@@ -184,8 +174,8 @@ def _clean_json_object(text: str) -> dict:
     return json.loads(text[start:end + 1])
 
 
-def _fallback_meta(title: str, game: str) -> str:
-    subject = destination_label(game)
+def _fallback_meta(title: str, game: str, game_label: str = "") -> str:
+    subject = destination_label(game, game_label)
     text = (
         f"{title}. A practical Dolla guide to {subject}, free-play practice, crypto basics "
         "and the key things players should check before real play."
@@ -199,12 +189,12 @@ def complete_headline_brief(brief: Brief, trend_context: str = "") -> Brief:
     """Fill optional SEO brief fields for headline-first mode without changing the engine."""
     brief.h1 = brief.h1 or brief.title
     brief.intent = brief.intent or "informational"
-    game_label = destination_label(brief.game)
+    game_label = destination_label(brief.game, brief.game_label)
 
     # Destination copy is deliberately deterministic. The writer may improve the keyword/angle,
     # but it must never invent a different Dolla game and hand a contradictory brief to the article
     # generator (for example, game=voidrun with an Olympus CTA).
-    brief.meta_description = brief.meta_description or _fallback_meta(brief.title, brief.game)
+    brief.meta_description = brief.meta_description or _fallback_meta(brief.title, brief.game, brief.game_label)
     brief.why_dolla = brief.why_dolla or (
         f"Dolla offers a direct {game_label} experience with free-play demo access."
         if brief.game else
@@ -381,6 +371,8 @@ def publish_and_push(brief: Brief) -> dict:
 def show_review(brief: Brief, error: str | None = None, notice: str | None = None):
     result = gate_run(brief, published_bodies=comparison_bodies(brief.slug))
     brief = result.fixed_brief or brief
+    choices = destinations()
+    known = {d["slug"] for d in choices}
     return render_template(
         "review.html",
         brief=brief,
@@ -388,6 +380,8 @@ def show_review(brief: Brief, error: str | None = None, notice: str | None = Non
         preview=render_page(brief).html,
         error=error,
         notice=notice,
+        destinations=choices,
+        selected_game=brief.game if brief.game in known else CUSTOM["slug"],
     )
 
 
@@ -402,6 +396,10 @@ def _too_similar_to_existing(title: str, existing: list[str]) -> bool:
 
 def _guess_destination(text: str) -> str:
     t = text.lower()
+    for choice in destinations():
+        label = choice["label"].lower()
+        if choice["slug"] and choice["slug"] != CUSTOM["slug"] and len(label) > 4 and label in t:
+            return choice["slug"]
     checks = [
         (("void run",), "voidrun"),
         (("crash", "crash game", "crash gambling", "crash casino"), "crash"),
@@ -561,8 +559,13 @@ def ideas():
         "ideas.html",
         grouped=grouped,
         error=trend_error,
-        destinations=DESTINATIONS,
+        destinations=destinations(),
     )
+
+
+@app.route("/api/destinations")
+def destination_options():
+    return jsonify(destinations())
 
 
 @app.route("/feed", methods=["GET", "POST"])
@@ -575,9 +578,13 @@ def feed():
             "market": request.args.get("market", "US"),
             "trend_context": request.args.get("trend_context", ""),
         }
-        return render_template("feed.html", destinations=DESTINATIONS, prefill=prefill)
+        return render_template("feed.html", destinations=destinations(), prefill=prefill)
 
-    brief = brief_from_form(request.form)
+    try:
+        brief = brief_from_form(request.form)
+    except ValueError as exc:
+        return render_template("feed.html", destinations=destinations(), prefill=request.form,
+                               error=str(exc)), 400
     try:
         process_image_upload(brief)
     except ValueError as exc:
@@ -597,7 +604,11 @@ def feed():
 
 @app.route("/review", methods=["POST"])
 def review():
-    brief = brief_from_form(request.form)
+    try:
+        brief = brief_from_form(request.form)
+    except ValueError as exc:
+        return render_template("feed.html", destinations=destinations(), prefill=request.form,
+                               error=str(exc)), 400
     try:
         process_image_upload(brief)
     except ValueError as exc:

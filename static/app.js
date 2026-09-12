@@ -13,6 +13,17 @@
   const manualOnly = [...document.querySelectorAll('.manual-only')];
   const generateOnly = [...document.querySelectorAll('.generate-only')];
   const BATCH_STORE = 'dolla_batch_drafts_v2';
+  const destinationSelect = form?.querySelector('select[name="game"]');
+  const customFields = form?.querySelector('.custom-game-fields');
+  function updateCustomGame() {
+    if (!customFields) return;
+    const custom = destinationSelect?.value === '__custom__';
+    customFields.hidden = !custom;
+    customFields.style.display = custom ? '' : 'none';
+    customFields.querySelectorAll('input').forEach(input => { input.required = custom; });
+  }
+  destinationSelect?.addEventListener('change', updateCustomGame);
+  updateCustomGame();
 
   function currentMode() {
     return modeInputs.find(x => x.checked)?.value || 'generate';

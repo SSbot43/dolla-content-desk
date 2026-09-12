@@ -16,6 +16,13 @@ Then open `http://127.0.0.1:5000`.
 On Windows, `START_WINDOWS.bat` automatically uses a sibling `dollacasino-content` folder and
 overrides stale `CONTENT_REPO` values from copied `.env` files.
 
+Game destinations are read from the public `dolla.fo` lobby when a destination screen first opens
+and refreshed every 15 minutes. To use a local Dolla site checkout instead, set `DOLLA_SITE_REPO`
+to its root (the desk reads `static/index.html`). If discovery is unavailable, the last good roster
+is retained; a small starter roster is used before the first successful discovery. The create,
+review, and batch screens also offer **Custom / new game** for a name and path that have not yet
+appeared in the lobby. The name and path are saved with the article brief.
+
 ## Current workflow
 - **Dashboard** — today's ramp cap, queued/draft/live counts, system status, upcoming queue, live guides.
 - **Generate with Gemini** — fill the brief and let the existing engine generate + repair the draft.

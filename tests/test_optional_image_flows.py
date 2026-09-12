@@ -55,8 +55,8 @@ class OptionalImageFlowTests(unittest.TestCase):
         page = response.get_data(as_text=True)
         self.assertIn("PASS — ready to queue or publish", page)
         self.assertIn("no-image", page)
-        self.assertNotRegex(page, r"<button[^>]*disabled[^>]*>Queue for later")
-        self.assertNotRegex(page, r"<button[^>]*disabled[^>]*>Publish &(?:amp;)? Push")
+        self.assertNotRegex(page, r"<button[^>]*disabled[^>]*>Approve & queue")
+        self.assertNotRegex(page, r"<button[^>]*disabled[^>]*>Publish immediately")
 
     def test_single_article_flow_allows_no_image(self):
         response = self.client.post("/feed", data=form_data("paste"))
@@ -118,8 +118,8 @@ class OptionalImageFlowTests(unittest.TestCase):
         page = response.get_data(as_text=True)
         self.assertIn("BLOCKED — fix the red issues", page)
         self.assertIn("no-alt", page)
-        self.assertRegex(page, r"<button[^>]*disabled[^>]*>Queue for later")
-        self.assertRegex(page, r"<button[^>]*disabled[^>]*>Publish &(?:amp;)? Push")
+        self.assertRegex(page, r"<button[^>]*disabled[^>]*>Approve & queue")
+        self.assertRegex(page, r"<button[^>]*disabled[^>]*>Publish immediately")
 
     def test_queue_for_later_saves_locally_without_git_push(self):
         approved = self.approved_brief()
