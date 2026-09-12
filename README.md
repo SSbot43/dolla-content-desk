@@ -1,33 +1,33 @@
-# dolla-content-desk
+# Keys-Shop Content Desk
 
-Local **content control desk** for the `dollacasino.com` SEO sprint. It sits on top of the existing
-`dollacasino-content` engine; it does **not** reimplement generation, claims policy, quality gating,
-rendering, ramp scheduling, or publishing.
+This branch is the isolated Keys-Shop Content Desk workspace.
 
-## Run
-```bash
-pip install -r requirements.txt
-set CONTENT_REPO=C:/path/to/dollacasino-content
-set GEMINI_API_KEY=...
-python bulk_launcher.py
+Use it from its own local folder, for example:
+
+```text
+E:\Claude work\keys-shop-content-desk
 ```
-Then open `http://127.0.0.1:5000`.
 
-On Windows, `START_WINDOWS.bat` automatically uses a sibling `dollacasino-content` folder and
-overrides stale `CONTENT_REPO` values from copied `.env` files.
+Do not run this branch from the Dolla Content Desk folder.
 
-## Current workflow
-- **Dashboard** — today's ramp cap, queued/draft/live counts, system status, upcoming queue, live guides.
-- **Generate with Gemini** — fill the brief and let the existing engine generate + repair the draft.
-- **My own article** — paste your own Markdown/article text and send it through the exact same quality and claims gate.
-- **Optional images** — publish without an image, or paste one from the clipboard, drag/drop one, choose a file, or use an image URL. Attached images require alt text and uploads are saved under `static/img/guides/` in the content repo.
-- **Editable review** — edit title, meta, H1, body, image, market and other Brief fields, then re-run the quality gate.
-- **Queue & Push** — assigns the next valid ramp slot, commits the queue (and its local image when needed), and pushes to GitHub so the scheduled publisher can see it.
-- **Publish & Push** — one click from a passing review: queue → existing `run_publish()` → stage content-owned output → commit → `git push`. Cloudflare then deploys from the content repo push.
+## Start
 
-## Safety / architecture
-- The `dolla_content` engine remains the source of truth.
-- Every queue/publish action re-runs the server-side quality gate.
-- A blocked article cannot queue or publish.
-- Publish commits stage only content-workflow files and referenced guide images, rather than sweeping unrelated local changes into the commit.
-- Git uses the machine's existing credential manager; the UI does not store a GitHub token.
+On Windows, use only:
+
+```text
+START_KEYS_CONTENT_DESK.bat
+```
+
+It starts the Keys-Shop desk on `http://127.0.0.1:5002/batch`.
+
+Utility BAT files for connection testing, draft testing, and staff-package building live under `tools/` so the project root has one obvious launcher.
+
+## WordPress setup
+
+See `KEYS_SHOP_SETUP.md` for the Application Password, Yoast bridge, and publishing-safety setup.
+
+## Architecture
+
+- Shared Content OS generation/review concepts are reused from the Dolla proof of concept.
+- Keys-Shop has its own WordPress adapter, ecommerce/product accuracy rules, internal-link logic, and publishing flow.
+- Dolla and Keys-Shop should remain in separate local working folders so branch switching in one cannot affect the other.
