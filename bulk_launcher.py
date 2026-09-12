@@ -112,7 +112,7 @@ def _dirty_paths(repo: Path) -> list[str]:
 def _sync_content_repo_once(repo: Path) -> None:
     """Merge local queued work with the latest scheduled-publisher state."""
     if not (repo / ".git").exists():
-        print(f"[Content Desk] sync skipped: no git repo at {repo}")
+        print(f"[Content Desk] sync skipped: no git repo at {repo}", flush=True)
         return
 
     queue_path = repo / "content" / "queue.json"
@@ -121,18 +121,17 @@ def _sync_content_repo_once(repo: Path) -> None:
     unrelated = [p for p in dirty if p != "content/queue.json"]
     stashed = False
 
-    # Protect any unrelated local edits rather than letting them block dashboard refresh forever.
     if unrelated:
         stash = _git(repo, "stash", "push", "-u", "-m", "dolla-dashboard-autostash", "--", *unrelated)
         if stash.returncode != 0:
-            print("[Content Desk] sync skipped: could not protect local files:", stash.stderr.strip() or stash.stdout.strip())
+            print("[Content Desk] sync skipped: could not protect local files:", stash.stderr.strip() or stash.stdout.strip(), flush=True)
             return
         stashed = "No local changes" not in (stash.stdout or "")
 
     try:
         fetch = _git(repo, "fetch", "origin", "main")
         if fetch.returncode != 0:
-            print("[Content Desk] sync fetch failed:", fetch.stderr.strip() or fetch.stdout.strip())
+            print("[Content Desk] sync fetch failed:", fetch.stderr.strip() or fetch.stdout.strip(), flush=True)
             return
 
         remote_queue = _remote_json(repo, "content/queue.json", [])
@@ -141,7 +140,7 @@ def _sync_content_repo_once(repo: Path) -> None:
 
         reset = _git(repo, "reset", "--hard", "origin/main")
         if reset.returncode != 0:
-            print("[Content Desk] sync reset failed:", reset.stderr.strip() or reset.stdout.strip())
+            print("[Content Desk] sync reset failed:", reset.stderr.strip() or reset.stdout.strip(), flush=True)
             return
 
         queue_path.parent.mkdir(parents=True, exist_ok=True)
@@ -156,34 +155,41 @@ def _sync_content_repo_once(repo: Path) -> None:
                     if commit.returncode == 0:
                         push = _git(repo, "push", "origin", "main")
                         if push.returncode != 0:
-                            print("[Content Desk] queue sync push failed; local merge preserved:", push.stderr.strip() or push.stdout.strip())
+                            print("[Content Desk] queue sync push failed; local merge preserved:", push.stderr.strip() or push.stdout.strip(), flush=True)
                         else:
-                            print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live")
+                            print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live", flush=True)
                     else:
-                        print("[Content Desk] sync commit failed:", commit.stderr.strip() or commit.stdout.strip())
+                        print("[Content Desk] sync commit failed:", commit.stderr.strip() or commit.stdout.strip(), flush=True)
                 else:
-                    print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live")
+                    print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live", flush=True)
         else:
-            print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live")
+            print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live", flush=True)
     finally:
         if stashed:
             pop = _git(repo, "stash", "pop", "--index")
             if pop.returncode != 0:
-                print("[Content Desk] WARNING: local files remain safe in git stash:", pop.stderr.strip() or pop.stdout.strip())
+                print("[Content Desk] WARNING: local files remain safe in git stash:", pop.stderr.strip() or pop.stdout.strip(), flush=True)
 
 
 def _sync_loop(repo: Path) -> None:
-    time.sleep(2)
     while True:
+        time.sleep(max(15, SYNC_SECONDS))
         try:
             _sync_content_repo_once(repo)
         except Exception as exc:
-            print(f"[Content Desk] sync error: {exc}")
-        time.sleep(max(15, SYNC_SECONDS))
+            print(f"[Content Desk] sync error: {exc}", flush=True)
 
 
 if __name__ == "__main__":
     content_repo = Path(os.environ.get("CONTENT_REPO", str(desk.CONTENT_REPO))).resolve()
-    print(f"[Content Desk] content repo: {content_repo}")
+    print(f"[Content Desk] content repo: {content_repo}", flush=True)
+
+    # Do the first reconciliation synchronously, before Flask starts. This guarantees the dashboard
+    # cannot render stale counters from yesterday's local queue/published files.
+    try:
+        _sync_content_repo_once(content_repo)
+    except Exception as exc:
+        print(f"[Content Desk] startup sync error: {exc}", flush=True)
+
     threading.Thread(target=_sync_loop, args=(content_repo,), daemon=True).start()
     app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)), debug=True, use_reloader=False)
