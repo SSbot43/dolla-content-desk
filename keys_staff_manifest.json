@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "branch": "content-os-keys-shop-mvp",
+  "files": [
+    "keys_app.py",
+    "keys_keywords.py",
+    "requirements.txt",
+    "KEYS_SHOP_SETUP.md",
+    "keys_staff_update.py",
+    "content_os/__init__.py",
+    "content_os/keys_generation.py",
+    "content_os/keys_queue.py",
+    "content_os/models.py",
+    "content_os/quality.py",
+    "content_os/adapters/__init__.py",
+    "content_os/adapters/keys_shop.py",
+    "content_os/adapters/wordpress.py",
+    "content_os/adapters/wordpress_bridge.py",
+    "templates/keys_batch.html",
+    "templates/keys_review.html",
+    "static/style.css",
+    "static/content-upgrades.css"
+  ]
+}
