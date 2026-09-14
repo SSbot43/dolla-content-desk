@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='content-upgrades.css') }}">
   <style>
     .queue-open-form{margin:0}.queue-open-link{appearance:none;background:none;border:0;padding:0;margin:0;color:inherit;font:inherit;text-align:left;cursor:pointer}.queue-open-link strong{color:var(--text)}.queue-open-link:hover strong{text-decoration:underline;text-underline-offset:3px}.queue-open-link:hover .small-text{color:var(--gold2)}
-    .queue-head-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.queue-head-actions form{margin:0}
+    .queue-head-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .sync-note{font-size:11px;color:var(--muted);margin-top:5px}
   </style>
 </head>
@@ -27,19 +27,12 @@
 </header>
 
 <main class="page">
-  {% if request.args.get('pushed') is not none %}
-    <div class="banner ok"><strong>Queue pushed</strong><span>{{ request.args.get('pushed') }} approved queued article(s) are now saved to GitHub in one push.</span></div>
-  {% endif %}
-  {% if request.args.get('push_error') %}
-    <div class="banner bad"><strong>Push failed</strong><span>{{ request.args.get('push_error') }}</span></div>
-  {% endif %}
-
   <section class="hero-strip">
     <div>
       <div class="eyebrow">180-day SEO sprint</div>
       <h2>Topic → Gemini → review → queue or publish.</h2>
-      <p>Approve articles locally as you go, then push the whole queue to GitHub once.</p>
-      <div class="sync-note">Dashboard checks for remote scheduled-publish updates automatically and refreshes about once a minute.</div>
+      <p>Approve articles as you go. Approved queue items sync to GitHub automatically in the background.</p>
+      <div class="sync-note">Queue sync is duplicate-safe by slug. The dashboard also checks for scheduled-publish updates and refreshes about once a minute.</div>
     </div>
     <div class="system-pills">
       <span class="pill {{ 'ok' if gemini_ready else 'bad' }}">Gemini {{ 'ready' if gemini_ready else 'missing key' }}</span>
@@ -85,11 +78,7 @@
     <div class="panel-title row-between">
       <span>Upcoming queue</span>
       <div class="queue-head-actions">
-        {% if queued %}
-        <form method="post" action="{{ url_for('push_queued_all') }}">
-          <button class="btn primary" type="submit">Push all queued ({{ queued }})</button>
-        </form>
-        {% endif %}
+        <span class="sync-note">Auto-sync on approval</span>
         <a href="{{ url_for('feed') }}">Create another →</a>
       </div>
     </div>
