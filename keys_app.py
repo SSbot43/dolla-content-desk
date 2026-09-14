@@ -22,6 +22,7 @@ if load_dotenv:
     load_dotenv(ROOT / ".env.keys-shop", override=True)
 
 from content_os.adapters.wordpress_bridge import ContentBridgeClient, ContentBridgeError
+from content_os.adapters.wordpress import WordPressClient, WordPressError
 from content_os.keys_generation import GenerationError, generate_article, generate_topics
 from content_os.models import ContentItem, LinkTarget
 from content_os.quality import run as quality_run
@@ -34,6 +35,18 @@ def bridge() -> ContentBridgeClient:
     return ContentBridgeClient(
         os.environ.get("KEYS_WP_URL", "https://keys-shop.in"),
         os.environ.get("KEYS_CONTENT_OS_SECRET", ""),
+    )
+
+
+def wordpress() -> WordPressClient | None:
+    username = os.environ.get("KEYS_WP_USERNAME", "").strip()
+    app_password = os.environ.get("KEYS_WP_APP_PASSWORD", "").strip()
+    if not username or not app_password:
+        return None
+    return WordPressClient(
+        os.environ.get("KEYS_WP_URL", "https://keys-shop.in"),
+        username,
+        app_password,
     )
 
 
@@ -157,6 +170,17 @@ def wp_payload(item: ContentItem, status: str) -> dict:
     }
 
 
+def core_wp_payload(item: ContentItem, status: str) -> dict:
+    """Fields accepted by WordPress core REST; used only for safe duplicate recovery."""
+    return {
+        "title": item.title,
+        "slug": item.slug,
+        "content": item.body_html or item.body_md,
+        "excerpt": item.excerpt or item.meta_description,
+        "status": status,
+    }
+
+
 def _is_duplicate_slug_error(exc: Exception) -> bool:
     message = str(exc).lower()
     return "duplicate_slug" in message or ("http 409" in message and "slug already exists" in message)
@@ -176,6 +200,37 @@ def _public_post_for_slug(slug: str) -> dict | None:
     except Exception:
         return None
     return None
+
+
+def _recover_existing_post(item: ContentItem) -> dict:
+    """Reuse an existing draft/private/trash post with the same slug and publish it."""
+    wp = wordpress()
+    if wp is None:
+        raise RuntimeError(
+            "This slug already exists as a non-public WordPress post, but KEYS_WP_USERNAME / "
+            "KEYS_WP_APP_PASSWORD are missing. Add the existing Content Desk WordPress credentials "
+            "to .env.keys-shop and restart. No duplicate was created."
+        )
+
+    existing = wp.find_post_by_slug(item.slug)
+    if not existing:
+        raise RuntimeError(
+            "WordPress reports this slug already exists, but the authenticated Content Desk user "
+            "cannot see that post. Check that the Content Desk WordPress user still has Editor access."
+        )
+
+    post_id = int(existing["id"])
+    old_status = str(existing.get("status") or "")
+    # Untrash first; WordPress may reject a direct trash -> publish transition.
+    if old_status == "trash":
+        wp.update_post(post_id, {"status": "draft"})
+
+    updated = wp.update_post(post_id, core_wp_payload(item, "publish"))
+    return {
+        "id": updated.get("id") or post_id,
+        "url": updated.get("link") or updated.get("guid", {}).get("rendered"),
+        "previous_status": old_status,
+    }
 
 
 @app.get("/")
@@ -274,6 +329,7 @@ def api_bulk_publish():
     results = []
     published = 0
     already_exists = 0
+    recovered = 0
     skipped = 0
 
     for row in rows:
@@ -322,13 +378,27 @@ def api_bulk_publish():
                         "url": rendered,
                     })
                     continue
-                skipped += 1
-                results.append({
-                    "slug": item.slug,
-                    "title": item.title,
-                    "status": "error",
-                    "error": "A WordPress post with this slug already exists, but it is not publicly published. Check WordPress Posts/Trash for this slug. No duplicate was created.",
-                })
+                try:
+                    restored = _recover_existing_post(item)
+                    published += 1
+                    recovered += 1
+                    results.append({
+                        "slug": item.slug,
+                        "title": item.title,
+                        "status": "published",
+                        "recovered": True,
+                        "previous_status": restored.get("previous_status"),
+                        "post_id": restored.get("id"),
+                        "url": restored.get("url"),
+                    })
+                except Exception as recovery_exc:
+                    skipped += 1
+                    results.append({
+                        "slug": item.slug,
+                        "title": item.title,
+                        "status": "error",
+                        "error": f"Existing WordPress post could not be reused automatically: {recovery_exc}",
+                    })
                 continue
             skipped += 1
             results.append({
@@ -346,7 +416,13 @@ def api_bulk_publish():
                 "error": str(exc),
             })
 
-    return jsonify({"published": published, "already_exists": already_exists, "skipped": skipped, "results": results})
+    return jsonify({
+        "published": published,
+        "already_exists": already_exists,
+        "recovered": recovered,
+        "skipped": skipped,
+        "results": results,
+    })
 
 
 @app.post("/create-draft")
