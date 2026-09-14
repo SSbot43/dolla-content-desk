@@ -56,7 +56,7 @@ def build_item(form) -> ContentItem:
     try:
         for row in json.loads(form.get("supporting_targets") or "[]"):
             if isinstance(row, dict):
-                supporting.append(LinkTarget(**{k: row.get(k, "") for k in LinkTarget.__dataclass_fields__})
+                supporting.append(LinkTarget(**{k: row.get(k, "") for k in LinkTarget.__dataclass_fields__}))
     except Exception:
         pass
 
