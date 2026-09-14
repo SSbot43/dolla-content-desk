@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "instructions": "Each article should naturally target 2-5 closely related keywords. Do not try to use an entire cluster in one article. Unused keywords remain available for future articles on the same game/topic.",
+  "clusters": {
+    "no_kyc_privacy": [
+      "no kyc crypto casino", "crypto casino without kyc", "no verification crypto casino", "casino without id verification", "no id casino", "anonymous crypto casino", "anonymous casino", "no kyc casino", "no verification casino", "crypto casino no verification", "crypto gambling without kyc", "bitcoin casino no kyc", "no kyc bitcoin casino", "casino without documents", "casino signup without id", "casino registration without verification", "casino without passport", "casino verification at withdrawal", "casino kyc explained", "what is kyc in casino", "why do casinos ask for kyc", "no kyc vs low kyc casino", "conditional kyc casino", "casino security checks withdrawal", "crypto gambling privacy"
+    ],
+    "withdrawals_payouts": [
+      "fast withdrawal crypto casino", "fast payout crypto casino", "crypto casino fast withdrawals", "fastest crypto casino withdrawals", "crypto casino withdrawal times", "crypto casino payout time", "instant withdrawal crypto casino", "quick withdrawal crypto casino", "bitcoin casino fast withdrawal", "bitcoin casino withdrawal time", "litecoin casino withdrawal time", "usdt casino withdrawal", "casino withdrawal processing time", "how long do casino withdrawals take", "how long do crypto casino withdrawals take", "casino withdrawal pending", "crypto withdrawal pending", "why is my casino withdrawal pending", "casino withdrawal review", "crypto casino cashout", "how to withdraw from crypto casino", "casino crypto withdrawal", "fastest crypto for casino withdrawal", "crypto casino withdrawal fees", "crypto casino deposit and withdrawal"
+    ],
+    "free_demo_browser": [
+      "free casino games", "free casino games online", "free casino games no download", "free casino games no registration", "free casino games no download no registration", "casino games demo", "casino demo games", "casino games free play", "play casino games free", "free online casino games for fun", "browser casino games", "instant play casino games", "casino games without download", "free crypto casino games", "crypto casino demo", "casino practice mode", "casino games practice mode", "play casino games without depositing", "no deposit casino demo games", "casino games with virtual credits"
+    ],
+    "crash": [
+      "crash game online", "online crash game", "crash gambling game", "crash casino game", "crypto crash game", "free crash game", "crash game demo", "play crash game online", "how to play crash game", "how does crash gambling work", "crash game strategy", "crash game cash out strategy", "crash multiplier game", "crash betting game", "crash game rules"
+    ],
+    "plinko": [
+      "plinko online", "online plinko game", "plinko casino game", "plinko gambling game", "free plinko game", "plinko online free", "plinko demo", "play plinko online", "crypto plinko", "how to play plinko", "plinko risk levels", "plinko low risk vs high risk", "plinko multipliers", "plinko casino strategy", "plinko game rules"
+    ],
+    "mines": [
+      "mines casino game", "mines gambling game", "mines game online", "free mines game", "mines casino demo", "how to play mines casino", "mines casino strategy", "mines gambling strategy"
+    ],
+    "limbo": [
+      "limbo casino game", "limbo gambling game", "limbo game online", "free limbo game", "how to play limbo casino", "limbo casino strategy"
+    ],
+    "dice": [
+      "dice casino game", "online dice game", "free online dice game", "dice gambling game", "casino dice game online", "dice game strategy"
+    ],
+    "keno": [
+      "keno online", "online keno game", "free online keno", "how to play keno", "keno casino game"
+    ],
+    "hilo": [
+      "hilo card game", "hilo casino game", "higher lower card game", "higher or lower game online", "how to play hilo"
+    ],
+    "roulette": [
+      "rules of roulette", "how to play roulette", "roulette rules for beginners", "free roulette online", "free online roulette game", "roulette demo", "roulette bet types", "roulette inside bets", "roulette outside bets"
+    ],
+    "blackjack": [
+      "blackjack rules", "how to play blackjack", "free blackjack online", "blackjack demo", "blackjack card values", "blackjack ace value", "blackjack hit or stand", "blackjack split rules", "blackjack double down rules", "blackjack strategy for beginners", "blackjack 21 rules"
+    ],
+    "deal_or_no_deal": [
+      "deal or no deal online", "deal or no deal game online", "play deal or no deal online", "deal or no deal free online", "deal or no deal banker game", "deal or no deal strategy", "banker offer deal or no deal"
+    ],
+    "lucky_7": [
+      "lucky 7 dice game", "lucky seven dice game", "lucky 7 under over game"
+    ],
+    "penalty": [
+      "penalty shootout game online", "penalty kick game online", "penalty game online"
+    ],
+    "tower": [
+      "tower casino game", "tower gambling game"
+    ],
+    "wheel": [
+      "wheel casino game", "casino wheel game online", "wheel gambling game"
+    ],
+    "crypto_casino_general": [
+      "crypto casino", "online crypto casino", "cryptocurrency casino", "bitcoin casino", "bitcoin gambling site", "casino that accepts crypto", "crypto gambling site", "crypto casino games", "bitcoin gambling games", "casino with bitcoin deposits", "casino with usdt", "usdt casino", "litecoin casino", "casino accepting cryptocurrency", "crypto casino for beginners", "how crypto casinos work"
+    ],
+    "crypto_deposits": [
+      "how to deposit crypto at casino", "casino wallet address explained", "crypto casino deposit guide", "bitcoin casino deposit guide", "usdt casino deposit guide", "crypto casino network fees", "casino deposit network explained", "wrong crypto network casino deposit", "casino deposit pending crypto", "crypto casino minimum deposit"
+    ],
+    "online_casino_general": [
+      "real money casino games online", "online casino games", "online gambling games", "crypto gambling games", "browser gambling games", "casino games online no download"
+    ]
+  }
+}
