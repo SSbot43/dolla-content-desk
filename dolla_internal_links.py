@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
+from dolla_keywords import install as install_keywords
+
 # Relationship hints are intentionally conservative. Every candidate is filtered against the
 # dynamically discovered live lobby before being used.
 RELATED = {
@@ -112,3 +114,6 @@ Use these Dolla links naturally inside the article body, not as a dumped list at
     desk.complete_headline_brief = complete_headline_brief
     desk.brief_from_form = brief_from_form
     desk.gen._prompt = prompt_with_links
+
+    # Install after the link wrapper so both prompt plans are preserved.
+    install_keywords(desk)
