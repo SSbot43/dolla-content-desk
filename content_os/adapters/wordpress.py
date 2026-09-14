@@ -46,8 +46,20 @@ class WordPressClient:
         return self._request("GET", f"/tags?per_page={per_page}")
 
     def find_post_by_slug(self, slug: str):
-        result = self._request("GET", "/posts?slug=" + urllib.parse.quote(slug))
-        return result[0] if result else None
+        quoted = urllib.parse.quote(slug)
+        # Authenticated edit context can see non-public posts. WordPress does not
+        # reliably include Trash in status=any, so check it separately.
+        for status in ("any", "trash"):
+            query = urllib.parse.urlencode({
+                "slug": slug,
+                "status": status,
+                "context": "edit",
+                "per_page": 1,
+            })
+            result = self._request("GET", "/posts?" + query)
+            if result:
+                return result[0]
+        return None
 
     def create_post(self, payload: dict):
         return self._request("POST", "/posts", payload)
