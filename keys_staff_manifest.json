@@ -1,7 +1,8 @@
 {
-  "version": 1,
+  "version": 2,
   "branch": "content-os-keys-shop-mvp",
   "files": [
+    "START_KEYS_CONTENT_DESK.bat",
     "keys_app.py",
     "keys_keywords.py",
     "requirements.txt",
