@@ -26,6 +26,13 @@ if not defined PYTHON_CMD (
   exit /b 1
 )
 
+echo Checking for Keys-Shop Content Desk updates...
+if exist "keys_staff_update.py" (
+  %PYTHON_CMD% keys_staff_update.py
+) else (
+  echo Updater not found. Starting installed version.
+)
+
 echo Checking Keys-Shop Content Desk requirements...
 %PYTHON_CMD% -m pip install -r requirements.txt --disable-pip-version-check
 if errorlevel 1 (
