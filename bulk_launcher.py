@@ -168,7 +168,9 @@ def _sync_content_repo_once(repo: Path) -> None:
             print(f"[Content Desk] sync complete: {len(merged)} queued, {len(remote_published)} live", flush=True)
     finally:
         if stashed:
-            pop = _git(repo, "stash", "pop", "--index")
+            # Restore the protected working-tree files only. Restoring the old index state can
+            # collide with content/queue.json after the sync reset/merge and leave the repo conflicted.
+            pop = _git(repo, "stash", "pop")
             if pop.returncode != 0:
                 print("[Content Desk] WARNING: local files remain safe in git stash:", pop.stderr.strip() or pop.stdout.strip(), flush=True)
 
