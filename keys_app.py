@@ -257,9 +257,10 @@ def api_bulk_publish():
             article = row.get("article") or {}
             primary = row.get("target")
             supporting = row.get("supporting") or []
+            manual_override = bool(row.get("manual_override"))
             item = item_from_ai(article, primary, supporting)
             gate = quality_run(item, known_urls=set(item.internal_links))
-            if not gate.ok:
+            if not gate.ok and not manual_override:
                 skipped += 1
                 results.append({
                     "slug": item.slug,
@@ -275,6 +276,7 @@ def api_bulk_publish():
                 "slug": item.slug,
                 "title": item.title,
                 "status": "published",
+                "manual_override": manual_override and not gate.ok,
                 "post_id": created.get("id"),
                 "url": created.get("url"),
             })
