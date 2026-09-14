@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
@@ -160,6 +162,22 @@ def _is_duplicate_slug_error(exc: Exception) -> bool:
     return "duplicate_slug" in message or ("http 409" in message and "slug already exists" in message)
 
 
+def _public_post_for_slug(slug: str) -> dict | None:
+    """Return the live public WordPress post for a slug, if one really exists."""
+    base = os.environ.get("KEYS_WP_URL", "https://keys-shop.in").rstrip("/")
+    query = urllib.parse.urlencode({"slug": slug, "status": "publish", "per_page": 1})
+    url = f"{base}/wp-json/wp/v2/posts?{query}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "ContentOS/0.1"})
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            rows = json.loads(resp.read().decode("utf-8"))
+        if isinstance(rows, list) and rows:
+            return rows[0]
+    except Exception:
+        return None
+    return None
+
+
 @app.get("/")
 def home():
     empty = ContentItem(slug="", title="")
@@ -288,14 +306,28 @@ def api_bulk_publish():
             })
         except ContentBridgeError as exc:
             if _is_duplicate_slug_error(exc):
-                # Do not generate a new slug. That would create duplicate content just to bypass
-                # WordPress's collision guard. Treat the existing WordPress post as the source of truth.
-                already_exists += 1
+                existing = _public_post_for_slug(item.slug)
+                if existing:
+                    # The exact slug is already live. Count the operation as complete and never
+                    # manufacture a second slug merely to force another copy into WordPress.
+                    published += 1
+                    already_exists += 1
+                    rendered = existing.get("link") or existing.get("guid", {}).get("rendered")
+                    results.append({
+                        "slug": item.slug,
+                        "title": item.title,
+                        "status": "published",
+                        "existing": True,
+                        "post_id": existing.get("id"),
+                        "url": rendered,
+                    })
+                    continue
+                skipped += 1
                 results.append({
                     "slug": item.slug,
                     "title": item.title,
-                    "status": "already_exists",
-                    "message": "A WordPress post with this slug already exists. No duplicate was created.",
+                    "status": "error",
+                    "error": "A WordPress post with this slug already exists, but it is not publicly published. Check WordPress Posts/Trash for this slug. No duplicate was created.",
                 })
                 continue
             skipped += 1
