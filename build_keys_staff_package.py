@@ -71,9 +71,12 @@ def main() -> None:
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True, exist_ok=True)
 
-    # Keys-Shop runtime only.
+    # Keys-Shop runtime only. The updater/manifest let this extracted folder refresh itself later.
     for name in [
         "keys_app.py",
+        "keys_keywords.py",
+        "keys_staff_update.py",
+        "keys_staff_manifest.json",
         "requirements.txt",
         "START_KEYS_CONTENT_DESK.bat",
         "KEYS_SHOP_SETUP.md",
@@ -99,17 +102,22 @@ This folder is intentionally isolated from the Dolla Content Desk.
 
 ## Start
 Double-click `START_KEYS_CONTENT_DESK.bat`.
-The desk opens at `http://127.0.0.1:5002/batch`.
+The launcher checks the public Keys-Shop branch for approved desk updates, installs any changed runtime files, then opens `http://127.0.0.1:5002/batch`.
+
+If GitHub or the internet is temporarily unavailable, the updater leaves the installed files alone and starts the existing version.
 
 ## Scope
-Use this desk only for Keys-Shop article generation, review, queueing and WordPress publishing.
+Use this desk only for Keys-Shop article generation, review and WordPress publishing.
 It contains no Dolla queue, Dolla credentials, Dolla publisher configuration, or Dolla browser drafts.
+
+## SEO targeting
+For a recognised product family, the desk automatically supplies each article with product-appropriate keyword targets plus one factual Keys-Shop trust/safety/support phrase from the approved research. The writer is instructed to use them naturally and never invent trust claims.
 
 ## Important
 - Do not share `.env.keys-shop`.
-- Use `Publish immediately` only for genuinely time-sensitive content.
-- Review BLOCKED articles before using an editorial override.
+- Keep the folder intact; the updater expects the included file structure.
 - Product/category targets should be selected from the live search rather than typed as arbitrary URLs.
+- Review BLOCKED articles before publishing.
 """
     (OUT / "STAFF_README.md").write_text(readme, encoding="utf-8")
 
@@ -122,6 +130,7 @@ It contains no Dolla queue, Dolla credentials, Dolla publisher configuration, or
 
     print(f"Created: {ZIP}")
     print("This ZIP contains Keys-Shop credentials copied locally from your env files. Treat it as sensitive.")
+    print("Future approved runtime updates are downloaded automatically when staff launch the desk.")
 
 
 if __name__ == "__main__":
