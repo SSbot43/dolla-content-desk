@@ -23,6 +23,7 @@ from content_os.adapters.wordpress_bridge import ContentBridgeClient, ContentBri
 from content_os.keys_generation import GenerationError, generate_article, generate_topics
 from content_os.models import ContentItem, LinkTarget
 from content_os.quality import run as quality_run
+from keys_keywords import select_targets
 
 app = Flask(__name__)
 
@@ -55,7 +56,7 @@ def build_item(form) -> ContentItem:
     try:
         for row in json.loads(form.get("supporting_targets") or "[]"):
             if isinstance(row, dict):
-                supporting.append(LinkTarget(**{k: row.get(k, "") for k in LinkTarget.__dataclass_fields__}))
+                supporting.append(LinkTarget(**{k: row.get(k, "") for k in LinkTarget.__dataclass_fields__})
     except Exception:
         pass
 
@@ -219,14 +220,17 @@ def api_generate_article():
     if not title:
         return jsonify({"error": "Title is required"}), 400
     try:
-        supporting = data.get("supporting") or auto_supporting_targets(title, data.get("target"), limit=3)
-        article, provider = generate_article(title, data.get("target"), supporting)
-        item = item_from_ai(article, data.get("target"), supporting)
+        target = data.get("target")
+        supporting = data.get("supporting") or auto_supporting_targets(title, target, limit=3)
+        seo_targets = select_targets(title, target)
+        article, provider = generate_article(title, target, supporting, seo_targets=seo_targets)
+        item = item_from_ai(article, target, supporting)
         gate = quality_run(item, known_urls=set(item.internal_links))
         return jsonify({
             "article": article,
             "provider": provider,
             "supporting": supporting,
+            "seo_targets": seo_targets,
             "gate_ok": gate.ok,
             "issues": [{"code": i.code, "detail": i.detail, "blocking": i.blocking} for i in gate.issues],
         })
