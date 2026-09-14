@@ -155,6 +155,11 @@ def wp_payload(item: ContentItem, status: str) -> dict:
     }
 
 
+def _is_duplicate_slug_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return "duplicate_slug" in message or ("http 409" in message and "slug already exists" in message)
+
+
 @app.get("/")
 def home():
     empty = ContentItem(slug="", title="")
@@ -250,15 +255,16 @@ def api_bulk_publish():
     client = bridge()
     results = []
     published = 0
+    already_exists = 0
     skipped = 0
 
     for row in rows:
+        article = row.get("article") or {}
+        primary = row.get("target")
+        supporting = row.get("supporting") or []
+        manual_override = bool(row.get("manual_override"))
+        item = item_from_ai(article, primary, supporting)
         try:
-            article = row.get("article") or {}
-            primary = row.get("target")
-            supporting = row.get("supporting") or []
-            manual_override = bool(row.get("manual_override"))
-            item = item_from_ai(article, primary, supporting)
             gate = quality_run(item, known_urls=set(item.internal_links))
             if not gate.ok and not manual_override:
                 skipped += 1
@@ -280,16 +286,35 @@ def api_bulk_publish():
                 "post_id": created.get("id"),
                 "url": created.get("url"),
             })
+        except ContentBridgeError as exc:
+            if _is_duplicate_slug_error(exc):
+                # Do not generate a new slug. That would create duplicate content just to bypass
+                # WordPress's collision guard. Treat the existing WordPress post as the source of truth.
+                already_exists += 1
+                results.append({
+                    "slug": item.slug,
+                    "title": item.title,
+                    "status": "already_exists",
+                    "message": "A WordPress post with this slug already exists. No duplicate was created.",
+                })
+                continue
+            skipped += 1
+            results.append({
+                "slug": item.slug,
+                "title": item.title,
+                "status": "error",
+                "error": str(exc),
+            })
         except Exception as exc:
             skipped += 1
             results.append({
-                "slug": str((row.get("article") or {}).get("slug") or ""),
-                "title": str((row.get("article") or {}).get("title") or "Untitled"),
+                "slug": item.slug,
+                "title": item.title or "Untitled",
                 "status": "error",
                 "error": str(exc),
             })
 
-    return jsonify({"published": published, "skipped": skipped, "results": results})
+    return jsonify({"published": published, "already_exists": already_exists, "skipped": skipped, "results": results})
 
 
 @app.post("/create-draft")
