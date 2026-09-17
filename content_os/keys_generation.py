@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import json
 import html
+import json
 import os
 import re
 
@@ -142,19 +142,12 @@ def _topic_identity_words(target: dict) -> list[str]:
     """Separate the catalog's product name from purchase/fulfilment copy."""
     name = html.unescape(str(target.get("title") or "")).casefold()
     if target.get("kind", "product") != "category":
-        # Merchandising suffixes are not identity: "Final Cut App Store license
-        # | One-time Purchase — No Subscription Renewal" still means Final Cut.
         name = re.split(r"\s*(?:\||[—–])\s*|\s+-\s+", name, maxsplit=1)[0]
         name = re.sub(r"\b(?:app\s+store\s+)?licen[cs]e\b.*$", "", name)
         name = re.sub(r"\b(?:one[ -]?time\s+purchase|no\s+subscription\s+renewal)\b.*$", "", name)
-        # A duration can be written 1Year, 1 Year or 12-month. Keep version
-        # numbers such as Windows 11 and Office 365 intact.
         name = re.sub(r"\b\d+\s*-?\s*(?:years?|months?|days?)\b", "", name)
     words = re.findall(r"[^\W_]+", name)
-    ignored = {"for", "a", "an", "the", "in", "of", "and", "year", "years",
-               "month", "months", "day", "days", "annual", "yearly", "monthly",
-               "lifetime", "subscription", "plan", "license", "licence",
-               "pro", "premium", "buy"}
+    ignored = {"for", "a", "an", "the", "in", "of", "and", "year", "years", "month", "months", "day", "days", "annual", "yearly", "monthly", "lifetime", "subscription", "plan", "license", "licence", "pro", "premium", "buy"}
     core = [word for word in words if word not in ignored]
     return core or words
 
@@ -168,6 +161,90 @@ def _topic_matches_target(title: str, target: dict | None) -> bool:
     return bool(core) and bool(re.search(
         r"(?<!\w)" + re.escape(" ".join(core)) + r"(?!\w)", normalized
     ))
+
+
+def _product_phrase(target: dict | None) -> str:
+    """Return a search-friendly product name without sales-plan suffixes."""
+    raw = html.unescape(str((target or {}).get("title") or "")).strip()
+    if not raw:
+        return "Keys-Shop software"
+    if (target or {}).get("kind", "product") != "category":
+        raw = re.split(r"\s*(?:\||[—–])\s*|\s+-\s+", raw, maxsplit=1)[0]
+        raw = re.sub(r"\b(?:one[ -]?time\s+purchase|no\s+subscription\s+renewal)\b.*$", "", raw, flags=re.I)
+        raw = re.sub(r"\bfor\s+\d+\s*-?\s*(?:years?|months?|days?)\b.*$", "", raw, flags=re.I)
+    return re.sub(r"\s+", " ", raw).strip(" |—–-") or "Keys-Shop software"
+
+
+def _deterministic_focus_keyword(title: str, target: dict | None, seo_targets: dict) -> str:
+    """Choose a relevant focus keyphrase without trusting free-form AI metadata."""
+    approved = [str(x).strip() for x in seo_targets.get("product_keywords", []) if str(x).strip()]
+    if approved:
+        return approved[0][:70]
+    product = _product_phrase(target)
+    lower = title.casefold()
+    india = " in india" if "india" in lower else ""
+    if any(word in lower for word in ("payment", " pay ", "upi")):
+        suffix = "payment methods" + india
+    elif any(word in lower for word in ("setup", "install", "redeem", "activate", "activation")):
+        suffix = "setup guide"
+    elif any(word in lower for word in ("alternative", " vs ", "versus", "compare", "comparison")):
+        suffix = "alternatives"
+    elif any(word in lower for word in ("price", "pricing", "cost")):
+        suffix = "price" + india
+    elif any(word in lower for word in ("renew", "renewal")):
+        suffix = "renewal guide"
+    elif any(word in lower for word in ("safe", "buy", "purchase", "buyer")):
+        suffix = "buying guide" + india
+    elif "compatib" in lower:
+        suffix = "compatibility guide"
+    else:
+        meaningful = [w for w in re.findall(r"[A-Za-z0-9]+", title) if w.casefold() not in {
+            "the", "a", "an", "and", "or", "for", "in", "on", "with", "how", "what",
+            "why", "your", "after", "before", "answered", "questions",
+        }]
+        suffix = " ".join(meaningful[-3:]) or "guide"
+    phrase = re.sub(r"\s+", " ", f"{product} {suffix}").strip()
+    return phrase[:70].rstrip()
+
+
+def _deterministic_meta_description(title: str, target: dict | None, focus_keyword: str) -> str:
+    """Build accurate Yoast copy that includes the exact focus keyphrase."""
+    product = _product_phrase(target)
+    lower = title.casefold()
+    if any(word in lower for word in ("payment", " pay ", "upi")):
+        detail = "See what to check before payment and how to avoid common order, account, and purchase mistakes at Keys-Shop."
+    elif any(word in lower for word in ("setup", "install", "redeem", "activate", "activation")):
+        detail = "Review access, installation, redemption, and troubleshooting steps after purchasing through Keys-Shop."
+    elif any(word in lower for word in ("alternative", " vs ", "versus", "compare", "comparison")):
+        detail = "Compare practical features, workflow, compatibility, and buying considerations before choosing an option."
+    elif any(word in lower for word in ("price", "pricing", "cost")):
+        detail = "Review plan details, purchase checks, and the questions to answer before ordering through Keys-Shop."
+    elif any(word in lower for word in ("safe", "buy", "purchase", "buyer")):
+        detail = "Learn which product details and purchase terms to check before ordering through Keys-Shop."
+    else:
+        detail = f"Review the main buying, setup, and product details before choosing {product} through Keys-Shop."
+    description = re.sub(r"\s+", " ", f"{focus_keyword}: {detail}").strip()
+    if len(description) > 160:
+        description = description[:157].rsplit(" ", 1)[0].rstrip(" ,;:-") + "..."
+    return description
+
+
+def normalize_article_metadata(
+    data: dict,
+    target: dict | None,
+    seo_targets: dict | None = None,
+) -> dict:
+    """Return an article with target-locked SEO fields, including saved old drafts."""
+    normalized = dict(data)
+    title = str(normalized.get("title") or "").strip()
+    seo_targets = seo_targets or select_targets(title, target)
+    focus_keyword = _deterministic_focus_keyword(title, target, seo_targets)
+    meta_description = _deterministic_meta_description(title, target, focus_keyword)
+    normalized["primary_keyword"] = focus_keyword
+    normalized["meta_description"] = meta_description
+    normalized["excerpt"] = meta_description
+    normalized["meta_title"] = title[:60].rstrip()
+    return normalized
 
 
 def generate_article(
@@ -256,4 +333,8 @@ Keys-Shop product accuracy and safety:
     data["body_html"] = str(data.get("body_html") or "").strip()
     if not data["body_html"]:
         raise GenerationError("AI returned an empty article")
-    return data, provider
+    # SEO metadata is derived from the selected target and approved keyword set.
+    # Never allow an unrelated model-generated phrase (for example Google One on
+    # a Final Cut article) to reach Yoast.
+    return normalize_article_metadata(data, target, seo_targets), provider
+

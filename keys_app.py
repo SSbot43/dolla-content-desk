@@ -23,7 +23,7 @@ if load_dotenv:
 
 from content_os.adapters.wordpress_bridge import ContentBridgeClient, ContentBridgeError
 from content_os.adapters.wordpress import WordPressClient, WordPressError
-from content_os.keys_generation import GenerationError, generate_article, generate_topics
+from content_os.keys_generation import GenerationError, generate_article, generate_topics, normalize_article_metadata
 from content_os.models import ContentItem, LinkTarget
 from content_os.quality import run as quality_run
 from keys_keywords import select_targets
@@ -94,6 +94,9 @@ def build_item(form) -> ContentItem:
 
 
 def item_from_ai(data: dict, primary: dict | None, supporting: list[dict] | None = None) -> ContentItem:
+    # Re-normalize browser-saved drafts created by older desk versions before
+    # review or publish, so stale unrelated Yoast metadata cannot survive.
+    data = normalize_article_metadata(data, primary)
     p = LinkTarget(**{k: (primary or {}).get(k, "") for k in LinkTarget.__dataclass_fields__}) if primary else None
     supports = [LinkTarget(**{k: x.get(k, "") for k in LinkTarget.__dataclass_fields__}) for x in (supporting or [])]
     links = [x.url for x in ([p] if p else []) + supports if x and x.url]
@@ -445,3 +448,4 @@ def create_draft():
 if __name__ == "__main__":
     port = int(os.environ.get("KEYS_DESK_PORT", "5002"))
     app.run(host="127.0.0.1", port=port, debug=False)
+

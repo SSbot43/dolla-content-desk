@@ -2,13 +2,13 @@
 /**
  * Plugin Name: Keys-Shop Content OS Bridge
  * Description: Secure signed bridge for the local Keys-Shop Content Desk: product/category search, media upload and WordPress publishing.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: Keys-Shop
  */
 
 if (!defined('ABSPATH')) { exit; }
 
-const KEYS_CONTENT_OS_VERSION = '0.1.0';
+const KEYS_CONTENT_OS_VERSION = '0.2.0';
 const KEYS_CONTENT_OS_SECRET_OPTION = 'keys_content_os_bridge_secret';
 
 function keys_content_os_secret() {
@@ -195,9 +195,6 @@ function keys_content_os_create_post(WP_REST_Request $request) {
         return new WP_Error('post_missing', 'Title and slug are required.', array('status' => 400));
     }
     $existing = get_page_by_path($slug, OBJECT, 'post');
-    if ($existing) {
-        return new WP_Error('duplicate_slug', 'A WordPress post with this slug already exists.', array('status' => 409));
-    }
     $allowed_status = array('draft', 'pending', 'future', 'publish');
     $status = in_array(($data['status'] ?? 'draft'), $allowed_status, true) ? $data['status'] : 'draft';
     $author = get_user_by('login', 'contentdesk');
@@ -210,6 +207,9 @@ function keys_content_os_create_post(WP_REST_Request $request) {
         'post_excerpt' => sanitize_textarea_field((string) ($data['excerpt'] ?? '')),
         'post_status' => $status,
     );
+    // Upsert by slug so a reviewed re-publish repairs the existing post and its
+    // Yoast metadata instead of creating a duplicate or falling back to core REST.
+    if ($existing) { $postarr['ID'] = intval($existing->ID); }
     if ($author) { $postarr['post_author'] = $author->ID; }
     if (!empty($data['date'])) { $postarr['post_date'] = sanitize_text_field($data['date']); }
 
@@ -225,6 +225,7 @@ function keys_content_os_create_post(WP_REST_Request $request) {
     if (!empty($data['featured_media'])) { set_post_thumbnail($post_id, intval($data['featured_media'])); }
     if (!empty($data['meta_title'])) { update_post_meta($post_id, '_yoast_wpseo_title', sanitize_text_field($data['meta_title'])); }
     if (!empty($data['meta_description'])) { update_post_meta($post_id, '_yoast_wpseo_metadesc', sanitize_text_field($data['meta_description'])); }
+    if (!empty($data['focus_keyword'])) { update_post_meta($post_id, '_yoast_wpseo_focuskw', sanitize_text_field($data['focus_keyword'])); }
 
     return array(
         'id' => $post_id,
@@ -254,3 +255,4 @@ function keys_content_os_settings_page() {
     echo '<button class="button" name="keys_content_os_regenerate" value="1">Regenerate Secret</button>';
     echo '</form></div>';
 }
+

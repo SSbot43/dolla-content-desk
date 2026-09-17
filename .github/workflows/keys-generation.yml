@@ -6,6 +6,7 @@ on:
       - "content_os/keys_generation.py"
       - "keys_keywords.py"
       - "templates/keys_batch.html"
+      - "wordpress-plugin/**"
       - "tests/**"
       - ".github/workflows/keys-generation.yml"
 permissions:
@@ -24,5 +25,6 @@ jobs:
         with:
           node-version: "20"
       - run: pip install pytest Flask python-dotenv
-      - run: python -m pytest tests/test_keys_generation.py tests/test_keys_topic_identity.py tests/test_keys_shop_adapter.py tests/test_keys_catalog_identity.py -q
+      - run: python -m pytest tests/test_keys_generation.py tests/test_keys_topic_identity.py tests/test_keys_shop_adapter.py tests/test_keys_catalog_identity.py tests/test_keys_seo_metadata.py -q
       - run: node --test tests/keys_batch_state.test.cjs
+      - run: php -l wordpress-plugin/keys-content-os-bridge/keys-content-os-bridge.php
