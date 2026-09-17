@@ -96,6 +96,10 @@ def catalog() -> list[dict[str, str]]:
 
 
 def infer_family(title: str, target: dict | None) -> str:
+    # The selected name owns identity; broad categories and old headlines do not.
+    if target and target.get("title"):
+        title = str(target["title"])
+        target = None
     context = " ".join(str(x or "") for x in (title, (target or {}).get("title"), (target or {}).get("category"), (target or {}).get("sku")))
     ncontext = _norm(context)
     names = [x[0] for x in FAMILIES]
@@ -106,6 +110,9 @@ def infer_family(title: str, target: dict | None) -> str:
     best = ("", 0.0)
     for family in names:
         ftokens = _tokens(family)
+        distinctive = ftokens - {"pro", "premium", "advanced", "max", "plus", "subscription", "storage", "cloud"}
+        if not distinctive or not (ctokens & distinctive):
+            continue
         if not ftokens:
             continue
         overlap = len(ctokens & ftokens)

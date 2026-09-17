@@ -82,6 +82,8 @@ def _topic_keyword_context(target: dict | None) -> str:
 
 
 def generate_topics(target: dict | None, count: int = 20, seed: str = "") -> tuple[list[str], str]:
+    if target is not None and (not isinstance(target, dict) or not str(target.get("title") or "").strip()):
+        raise GenerationError("Select a product/category with a valid name before generating topics.")
     count = max(1, min(100, int(count)))
     keyword_context = _topic_keyword_context(target)
     prompt = f"""You are the editorial strategist for Keys-Shop.in, an established ecommerce store selling digital software and AI products.
@@ -89,6 +91,13 @@ Create exactly {count} useful SEO article ideas.
 
 Primary commercial destination:
 {_target_context(target)}
+
+IDENTITY LOCK: The exact selected destination above is authoritative. Never
+substitute another product/category, even if keyword research or editor direction
+mentions it. Treat those as secondary suggestions only when relevant to this
+selection. Every title must explicitly name the selected product (its core name
+without plan duration is fine) or selected category. Comparisons may name other
+products only alongside the selected identity. Do not reuse a previous selection.
 
 Approved keyword research for this selected product/category:
 {keyword_context}
@@ -104,15 +113,45 @@ Rules:
 - Avoid repetitive/cannibalizing titles.
 - Avoid textbook openings and phrases such as 'understanding why', 'at its core', 'in conclusion', 'furthermore', and 'moreover'.
 - Titles should sound publishable, natural and clickable without clickbait.
-- The selected product/category should be a natural destination, not forced into every title.
+- Keep every title naturally focused on the selected product/category.
 
 Return ONLY JSON as an array of strings, exactly {count} titles.
 """
-    data, provider = _call_ai(prompt)
-    if not isinstance(data, list):
-        raise GenerationError("Topic generator did not return a list")
-    titles = [str(x).strip() for x in data if str(x).strip()]
-    return titles[:count], provider
+    for attempt in range(2):
+        data, provider = _call_ai(prompt)
+        titles = [x.strip() for x in data if isinstance(x, str) and x.strip()] if isinstance(data, list) else []
+        invalid = [title for title in titles if not _topic_matches_target(title, target)]
+        if titles and not invalid and len(titles) == len(data):
+            return titles[:count], provider
+        if attempt == 0:
+            prompt += (
+                "\nCORRECTION: The previous response was invalid or contained titles unrelated "
+                "to the selected identity. Discard that set and generate a fresh JSON array. "
+                "Every title must explicitly include the selected product/category name. "
+                "Do not substitute a different product.\nAuthoritative selection:\n"
+                + _target_context(target)
+            )
+    name = str((target or {}).get("title") or "the requested topic")
+    raise GenerationError(f"Could not generate valid topics for {name} after one corrective retry. No topics were accepted. Please try again.")
+
+
+def _topic_matches_target(title: str, target: dict | None) -> bool:
+    """Fail closed on unanchored titles; never trust an AI identity label."""
+    if not target:
+        return True
+    words = re.findall(r"[^\W_]+", str(target.get("title") or "").casefold())
+    ignored = {"for", "a", "an", "the", "in", "of", "and", "year", "years", "month", "months", "day", "days", "annual", "yearly", "monthly", "lifetime", "subscription", "plan", "license", "licence", "pro", "premium", "buy"}
+    # Remove duration numbers only; version numbers (Windows 10/11) identify products.
+    core = [word for i, word in enumerate(words) if word not in ignored and not (
+        word.isdigit() and i + 1 < len(words) and words[i + 1] in {"year", "years", "month", "months", "day", "days"}
+    )]
+    core = core or words
+    normalized = " ".join(re.findall(r"[^\W_]+", title.casefold()))
+    # Require a name, not generic shared words such as Pro or software.
+    return bool(core) and any(
+        re.search(r"(?<!\w)" + re.escape(" ".join(name)) + r"(?!\w)", normalized)
+        for name in (core, words)
+    )
 
 
 def generate_article(

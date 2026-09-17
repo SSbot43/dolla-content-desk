@@ -52,7 +52,7 @@ def test_article_prompt_combines_human_style_with_keys_shop_guardrails(monkeypat
         'Never fabricate facts just to make the article sound authoritative.',
         'include its exact supplied URL naturally at least once',
         'Never invent an internal URL; use only the exact URLs supplied above.',
-        'primary_keyword should be the single best Yoast focus keyphrase',
+        'primary_keyword should normally be the best product-specific phrase from the supplied list',
     ):
         assert existing_guardrail in prompt
 
