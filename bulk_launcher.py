@@ -20,13 +20,9 @@ from pathlib import Path
 
 import app as desk
 from review_state_fix import install as install_review_state_fix
-from encoding_git import install as install_encoding_git
-from resilient_git import install as install_resilient_git
 from dolla_internal_links import install as install_internal_links
 
 install_review_state_fix(desk)
-install_encoding_git(desk)
-install_resilient_git(desk)
 install_internal_links(desk)
 app = desk.app
 

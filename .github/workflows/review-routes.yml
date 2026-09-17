@@ -8,6 +8,9 @@ on:
       - "immediate_publish.py"
       - "bulk_launcher.py"
       - "tests/test_review_routes.py"
+      - "tests/test_queue_sync.py"
+      - "resilient_git.py"
+      - "encoding_git.py"
       - ".github/workflows/review-routes.yml"
   pull_request:
     paths:
@@ -15,6 +18,9 @@ on:
       - "manual_override.py"
       - "immediate_publish.py"
       - "tests/test_review_routes.py"
+      - "tests/test_queue_sync.py"
+      - "resilient_git.py"
+      - "encoding_git.py"
 permissions:
   contents: read
 jobs:
@@ -29,3 +35,4 @@ jobs:
           python-version: "3.12"
       - run: pip install Flask
       - run: python -m unittest discover -s tests -p test_review_routes.py -v
+      - run: python -m unittest discover -s tests -p test_queue_sync.py -v

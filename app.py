@@ -701,7 +701,11 @@ def upload_image():
 # Register review actions for every entry point (app.py, Flask, and the launcher).
 from immediate_publish import install as install_publish_policy
 from manual_override import install as install_manual_override
+from encoding_git import install as install_encoding_git
+from resilient_git import install as install_resilient_git
 
+install_encoding_git(sys.modules[__name__])
+install_resilient_git(sys.modules[__name__])
 install_publish_policy(sys.modules[__name__])
 install_manual_override(sys.modules[__name__])
 
