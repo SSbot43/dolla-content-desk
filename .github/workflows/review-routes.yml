@@ -1,0 +1,31 @@
+name: Review route regression tests
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app.py"
+      - "manual_override.py"
+      - "immediate_publish.py"
+      - "bulk_launcher.py"
+      - "tests/test_review_routes.py"
+      - ".github/workflows/review-routes.yml"
+  pull_request:
+    paths:
+      - "app.py"
+      - "manual_override.py"
+      - "immediate_publish.py"
+      - "tests/test_review_routes.py"
+permissions:
+  contents: read
+jobs:
+  review-routes:
+    runs-on: ubuntu-latest
+    env:
+      DOLLA_SKIP_ENGINE_SYNC: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install Flask
+      - run: python -m unittest discover -s tests -p test_review_routes.py -v

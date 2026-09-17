@@ -698,5 +698,13 @@ def upload_image():
     return jsonify({"ok": True, "url": url})
 
 
+# Register review actions for every entry point (app.py, Flask, and the launcher).
+from immediate_publish import install as install_publish_policy
+from manual_override import install as install_manual_override
+
+install_publish_policy(sys.modules[__name__])
+install_manual_override(sys.modules[__name__])
+
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)), debug=True)

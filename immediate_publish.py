@@ -11,7 +11,9 @@ from datetime import date
 
 
 def install(desk) -> None:
-    """Install auto-slot queue behavior plus manual override/publish routes."""
+    """Install auto-slot queue behavior and immediate publish once per app."""
+    if "publish_now" in desk.app.view_functions:
+        return
 
     def auto_queue_brief(brief):
         # Dates are an engine concern, not an editor concern. Recalculate the next free ramp slot
@@ -25,23 +27,6 @@ def install(desk) -> None:
     # Existing /queue-local route resolves this module global at request time, so replacing it here
     # upgrades the policy without duplicating the route or forking app.py.
     desk.queue_brief = auto_queue_brief
-
-    @desk.app.route("/queue-override", methods=["POST"])
-    def queue_override():
-        """Queue a personally-reviewed article despite a blocking quality-gate result."""
-        import json
-        from flask import request
-
-        brief = desk.Brief.from_dict(json.loads(request.form["brief_json"]))
-        brief.gate_override = True
-        brief = auto_queue_brief(brief)
-        return desk.show_review(
-            brief,
-            notice=(
-                "Queued with a manual editorial override. The quality-gate warning is recorded, "
-                "and the scheduled publisher will allow this article through the FIFO queue."
-            ),
-        )
 
     @desk.app.route("/publish-now", methods=["POST"])
     def publish_now():

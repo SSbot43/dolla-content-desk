@@ -19,15 +19,11 @@ import time
 from pathlib import Path
 
 import app as desk
-from immediate_publish import install as install_publish_policy
-from manual_override import install as install_manual_override
 from review_state_fix import install as install_review_state_fix
 from encoding_git import install as install_encoding_git
 from resilient_git import install as install_resilient_git
 from dolla_internal_links import install as install_internal_links
 
-install_publish_policy(desk)
-install_manual_override(desk)
 install_review_state_fix(desk)
 install_encoding_git(desk)
 install_resilient_git(desk)
