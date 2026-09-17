@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import html
 import os
 import re
 
@@ -92,6 +93,8 @@ Create exactly {count} useful SEO article ideas.
 Primary commercial destination:
 {_target_context(target)}
 
+Core name to include naturally in every title: {' '.join(_topic_identity_words(target)) if target else 'general Keys-Shop content'}
+
 IDENTITY LOCK: The exact selected destination above is authoritative. Never
 substitute another product/category, even if keyword research or editor direction
 mentions it. Treat those as secondary suggestions only when relevant to this
@@ -135,23 +138,36 @@ Return ONLY JSON as an array of strings, exactly {count} titles.
     raise GenerationError(f"Could not generate valid topics for {name} after one corrective retry. No topics were accepted. Please try again.")
 
 
+def _topic_identity_words(target: dict) -> list[str]:
+    """Separate the catalog's product name from purchase/fulfilment copy."""
+    name = html.unescape(str(target.get("title") or "")).casefold()
+    if target.get("kind", "product") != "category":
+        # Merchandising suffixes are not identity: "Final Cut App Store license
+        # | One-time Purchase — No Subscription Renewal" still means Final Cut.
+        name = re.split(r"\s*(?:\||[—–])\s*|\s+-\s+", name, maxsplit=1)[0]
+        name = re.sub(r"\b(?:app\s+store\s+)?licen[cs]e\b.*$", "", name)
+        name = re.sub(r"\b(?:one[ -]?time\s+purchase|no\s+subscription\s+renewal)\b.*$", "", name)
+        # A duration can be written 1Year, 1 Year or 12-month. Keep version
+        # numbers such as Windows 11 and Office 365 intact.
+        name = re.sub(r"\b\d+\s*-?\s*(?:years?|months?|days?)\b", "", name)
+    words = re.findall(r"[^\W_]+", name)
+    ignored = {"for", "a", "an", "the", "in", "of", "and", "year", "years",
+               "month", "months", "day", "days", "annual", "yearly", "monthly",
+               "lifetime", "subscription", "plan", "license", "licence",
+               "pro", "premium", "buy"}
+    core = [word for word in words if word not in ignored]
+    return core or words
+
+
 def _topic_matches_target(title: str, target: dict | None) -> bool:
-    """Fail closed on unanchored titles; never trust an AI identity label."""
+    """Require the selected product's core name, not its full sales listing."""
     if not target:
         return True
-    words = re.findall(r"[^\W_]+", str(target.get("title") or "").casefold())
-    ignored = {"for", "a", "an", "the", "in", "of", "and", "year", "years", "month", "months", "day", "days", "annual", "yearly", "monthly", "lifetime", "subscription", "plan", "license", "licence", "pro", "premium", "buy"}
-    # Remove duration numbers only; version numbers (Windows 10/11) identify products.
-    core = [word for i, word in enumerate(words) if word not in ignored and not (
-        word.isdigit() and i + 1 < len(words) and words[i + 1] in {"year", "years", "month", "months", "day", "days"}
-    )]
-    core = core or words
-    normalized = " ".join(re.findall(r"[^\W_]+", title.casefold()))
-    # Require a name, not generic shared words such as Pro or software.
-    return bool(core) and any(
-        re.search(r"(?<!\w)" + re.escape(" ".join(name)) + r"(?!\w)", normalized)
-        for name in (core, words)
-    )
+    core = _topic_identity_words(target)
+    normalized = " ".join(re.findall(r"[^\W_]+", html.unescape(title).casefold()))
+    return bool(core) and bool(re.search(
+        r"(?<!\w)" + re.escape(" ".join(core)) + r"(?!\w)", normalized
+    ))
 
 
 def generate_article(

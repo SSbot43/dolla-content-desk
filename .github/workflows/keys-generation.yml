@@ -1,0 +1,28 @@
+name: Keys-Shop generation regression tests
+on:
+  push:
+    branches: [content-os-keys-shop-mvp]
+    paths:
+      - "content_os/keys_generation.py"
+      - "keys_keywords.py"
+      - "templates/keys_batch.html"
+      - "tests/**"
+      - ".github/workflows/keys-generation.yml"
+permissions:
+  contents: read
+jobs:
+  keys-generation:
+    runs-on: ubuntu-latest
+    env:
+      DOLLA_SKIP_ENGINE_SYNC: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: pip install pytest Flask python-dotenv
+      - run: python -m pytest tests/test_keys_generation.py tests/test_keys_topic_identity.py tests/test_keys_shop_adapter.py tests/test_keys_catalog_identity.py -q
+      - run: node --test tests/keys_batch_state.test.cjs
