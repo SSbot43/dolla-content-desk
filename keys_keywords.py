@@ -110,7 +110,7 @@ def infer_family(title: str, target: dict | None) -> str:
     best = ("", 0.0)
     for family in names:
         ftokens = _tokens(family)
-        distinctive = ftokens - {"pro", "premium", "advanced", "max", "plus", "subscription", "storage", "cloud"}
+        distinctive = ftokens - {"pro", "premium", "advanced", "max", "plus", "subscription", "storage", "cloud", "one"}
         if not distinctive or not (ctokens & distinctive):
             continue
         if not ftokens:
@@ -184,3 +184,4 @@ def topic_opportunities(target: dict | None, limit: int = 12) -> dict:
         "product_keywords": [r["keyword"] for r in products[:limit]],
         "trust_keywords": [r["keyword"] for r in trusts[:3]],
     }
+

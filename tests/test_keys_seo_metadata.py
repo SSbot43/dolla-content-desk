@@ -62,6 +62,17 @@ def test_approved_research_keyword_wins_over_ai_keyword(monkeypatch):
     assert article["meta_description"].startswith("Claude Pro price in india:")
 
 
+def test_one_time_purchase_does_not_match_google_one_keyword_family():
+    from keys_keywords import select_targets
+
+    targets = select_targets("Final Cut setup guide", FINAL_CUT)
+    assert targets["family"] == ""
+    assert targets["product_keywords"] == []
+
+    google_one = select_targets("Google One alternatives", {"title": "Google One For 1Year"})
+    assert google_one["family"] == "Google One"
+
+
 def test_wordpress_bridge_writes_all_yoast_fields_and_upserts_by_slug():
     source = Path("wordpress-plugin/keys-content-os-bridge/keys-content-os-bridge.php").read_text(encoding="utf-8")
     assert "'_yoast_wpseo_title'" in source

@@ -182,7 +182,7 @@ def _deterministic_focus_keyword(title: str, target: dict | None, seo_targets: d
         return approved[0][:70]
     product = _product_phrase(target)
     lower = title.casefold()
-    india = " in india" if "india" in lower else ""
+    india = " in India" if "india" in lower else ""
     if any(word in lower for word in ("payment", " pay ", "upi")):
         suffix = "payment methods" + india
     elif any(word in lower for word in ("setup", "install", "redeem", "activate", "activation")):
