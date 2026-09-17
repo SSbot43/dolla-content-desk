@@ -25,6 +25,7 @@ from urllib.parse import urlparse
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 from destinations import CUSTOM, clean_path, destinations
+from publication_status import dashboard_publications
 
 try:
     from dotenv import load_dotenv
@@ -529,7 +530,7 @@ def load_trend_ideas(force: bool = False) -> tuple[list[dict], str | None]:
 @app.route("/")
 def dashboard():
     queue = load_queue()
-    published = load_published()
+    published, publication_note = dashboard_publications(CONTENT_REPO, load_published())
     upcoming = sorted(
         [b for b in queue if b.body_md and b.slug not in published],
         key=lambda b: b.publish_date or "9999",
@@ -540,6 +541,7 @@ def dashboard():
         queued=len(upcoming),
         drafts=len([b for b in queue if not b.body_md]),
         live=len(published),
+        publication_note=publication_note,
         upcoming=upcoming[:40],
         published=list(reversed(list(published.values())))[:25],
         gemini_ready=bool(os.environ.get("GEMINI_API_KEY")),
