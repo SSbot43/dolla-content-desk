@@ -22,7 +22,7 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, make_response, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 from destinations import CUSTOM, clean_path, destinations
 from publication_status import dashboard_publications
@@ -303,6 +303,16 @@ def queue_brief(brief: Brief) -> Brief:
     queue = [b for b in queue if b.slug != brief.slug] + [brief]
     save_queue(queue)
     return brief
+
+
+def next_unique_slug(slug: str, used_slugs: set[str]) -> str:
+    """Keep every approved article without replacing an existing URL slug."""
+    if slug not in used_slugs:
+        return slug
+    number = 2
+    while f"{slug}-{number}" in used_slugs:
+        number += 1
+    return f"{slug}-{number}"
 
 
 def run_git(*args: str) -> subprocess.CompletedProcess[str]:
@@ -626,14 +636,25 @@ def queue_local():
     if not result.ok:
         return show_review(brief, error="Still blocked — fix the blocking issues before queueing.")
 
-    brief = queue_brief(result.fixed_brief or brief)
-    return show_review(
+    approved = result.fixed_brief or brief
+    used_slugs = {item.slug for item in load_queue()} | set(load_published())
+    original_slug = approved.slug
+    approved.slug = next_unique_slug(original_slug, used_slugs)
+    queue_action = "renamed" if approved.slug != original_slug else "created"
+    brief = queue_brief(approved)
+    slug_notice = (
+        f" The URL was changed to /guides/{brief.slug} so the existing article was not overwritten."
+        if queue_action == "renamed" else ""
+    )
+    response = make_response(show_review(
         brief,
         notice=(
             "Queued locally — not pushed yet. You can approve more articles now, then use "
-            "Push all queued on the dashboard once when you are finished."
+            "Push all queued on the dashboard once when you are finished." + slug_notice
         ),
-    )
+    ))
+    response.headers["X-Dolla-Queue-Action"] = queue_action
+    return response
 
 
 @app.route("/push-queued-all", methods=["POST"])
@@ -712,3 +733,4 @@ install_manual_override(sys.modules[__name__])
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)), debug=True)
+

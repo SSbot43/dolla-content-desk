@@ -125,7 +125,9 @@ class OptionalImageFlowTests(unittest.TestCase):
         approved = self.approved_brief()
         with (
             patch.object(desk, "comparison_bodies", return_value=[]),
-            patch.object(desk, "queue_brief", return_value=approved) as queue_brief,
+            patch.object(desk, "load_queue", return_value=[]),
+            patch.object(desk, "load_published", return_value={}),
+            patch.object(desk, "queue_brief", side_effect=lambda brief: brief) as queue_brief,
             patch.object(desk, "commit_and_push") as commit_and_push,
         ):
             response = self.client.post(
@@ -135,8 +137,34 @@ class OptionalImageFlowTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("Queued locally", response.get_data(as_text=True))
+        self.assertEqual(response.headers["X-Dolla-Queue-Action"], "created")
         queue_brief.assert_called_once()
         commit_and_push.assert_not_called()
+
+    def test_queue_for_later_numbers_existing_slug_without_overwrite(self):
+        approved = self.approved_brief()
+        existing = self.approved_brief()
+        with (
+            patch.object(desk, "comparison_bodies", return_value=[]),
+            patch.object(desk, "load_queue", return_value=[existing]),
+            patch.object(desk, "load_published", return_value={}),
+            patch.object(desk, "queue_brief", side_effect=lambda brief: brief) as queue_brief,
+        ):
+            response = self.client.post(
+                "/queue-local",
+                data={"brief_json": json.dumps(approved.to_dict())},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["X-Dolla-Queue-Action"], "renamed")
+        self.assertIn("/guides/approved-2", response.get_data(as_text=True))
+        self.assertEqual(queue_brief.call_args.args[0].slug, "approved-2")
+
+    def test_next_unique_slug_uses_next_available_number(self):
+        self.assertEqual(
+            desk.next_unique_slug("same-title", {"same-title", "same-title-2", "same-title-3"}),
+            "same-title-4",
+        )
 
     def test_windows_launcher_overrides_stale_content_repo_path(self):
         launcher_source = (Path(desk.__file__).parent / "START_WINDOWS.bat").read_text(encoding="utf-8")
@@ -189,3 +217,4 @@ class OptionalImageFlowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
