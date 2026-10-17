@@ -49,7 +49,8 @@ class GameRosterTests(unittest.TestCase):
         self.assertIn('id="copy-headline-prompt"', batch)
         self.assertIn("function buildHeadlinePrompt()", batch)
         self.assertIn("Use EVERY game in the roster below", batch)
-        self.assertIn("Create exactly 3 distinct article ideas for EVERY listed game", batch)
+        self.assertIn("ideasPerGame=games.length>33?2:3", batch)
+        self.assertIn("Create exactly ${ideasPerGame} distinct article ideas for EVERY listed game", batch)
         self.assertIn("DESTINATIONS.filter(([slug])=>slug&&slug!=='__custom__')", batch)
 
     def test_open_batch_refreshes_games_every_fifteen_minutes(self):
