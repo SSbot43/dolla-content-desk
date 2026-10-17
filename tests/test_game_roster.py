@@ -44,6 +44,14 @@ class GameRosterTests(unittest.TestCase):
         self.assertNotIn("['balloon-blitz',", batch)
         self.assertNotIn("['ruby-moolah',", batch)
 
+    def test_batch_builds_a_full_roster_gemini_headline_prompt(self):
+        batch = (ROOT / "static" / "batch.html").read_text(encoding="utf-8")
+        self.assertIn('id="copy-headline-prompt"', batch)
+        self.assertIn("function buildHeadlinePrompt()", batch)
+        self.assertIn("Use EVERY game in the roster below", batch)
+        self.assertIn("Create exactly 3 distinct article ideas for EVERY listed game", batch)
+        self.assertIn("DESTINATIONS.filter(([slug])=>slug&&slug!=='__custom__')", batch)
+
     def test_open_batch_refreshes_games_every_fifteen_minutes(self):
         batch = (ROOT / "static" / "batch.html").read_text(encoding="utf-8")
         app = (ROOT / "app.py").read_text(encoding="utf-8")
