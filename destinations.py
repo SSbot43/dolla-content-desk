@@ -12,15 +12,38 @@ from pathlib import Path
 HOME = {"slug": "", "label": "Dolla homepage / general"}
 CUSTOM = {"slug": "__custom__", "label": "Custom / new game"}
 FALLBACK = [
-    {"slug": "plinko", "label": "Plinko"},
-    {"slug": "mines", "label": "Mines"},
-    {"slug": "crash", "label": "Crash"},
+    {"slug": "coin-pusher", "label": "Dolla Money Pusher"},
+    {"slug": "balloon", "label": "Balloon Blitz"},
+    {"slug": "chicken", "label": "Chicken Run"},
+    {"slug": "penalty-nations-cup", "label": "Penalty Nations Cup"},
+    {"slug": "ruby", "label": "Dolla Ruby Moolah"},
+    {"slug": "inferno", "label": "Inferno Vault"},
+    {"slug": "bigscore", "label": "The Big Score"},
     {"slug": "voidrun", "label": "VOID Run"},
+    {"slug": "chariot", "label": "Chariot Race"},
+    {"slug": "olympus", "label": "Gods of Olympus"},
+    {"slug": "blackjack", "label": "Blackjack 21 Rush"},
+    {"slug": "roulette", "label": "Roulette"},
+    {"slug": "penalty", "label": "Penalty Shootout"},
+    {"slug": "tower", "label": "Tower of Fortune"},
+    {"slug": "keno", "label": "Keno"},
+    {"slug": "lucky7", "label": "Lucky 7"},
+    {"slug": "dond", "label": "Deal or No Deal"},
+    {"slug": "hilo", "label": "Hi/Lo"},
+    {"slug": "plinko", "label": "Plinko"},
+    {"slug": "slots", "label": "Slots"},
+    {"slug": "crash", "label": "Crash"},
+    {"slug": "dice", "label": "Dice"},
+    {"slug": "limbo", "label": "Limbo"},
+    {"slug": "mines", "label": "Mines"},
 ]
 # These are compatibility names, not a roster. Discovery decides which games exist.
 LEGACY_LABELS = {
-    "voidrun": "VOID Run", "slots": "Slots", "blackjack": "Blackjack",
-    "inferno": "Inferno Vault", "penalty": "Penalty Shooter", "plinko": "Plinko",
+    "coin-pusher": "Dolla Money Pusher", "balloon": "Balloon Blitz",
+    "chicken": "Chicken Run", "penalty-nations-cup": "Penalty Nations Cup",
+    "ruby": "Dolla Ruby Moolah", "voidrun": "VOID Run", "slots": "Slots",
+    "blackjack": "Blackjack 21 Rush", "inferno": "Inferno Vault",
+    "penalty": "Penalty Shootout", "plinko": "Plinko",
 }
 SAFE_PATH = re.compile(r"[a-z0-9][a-z0-9-]*(?:/[a-z0-9][a-z0-9-]*)*")
 CACHE_SECONDS = 15 * 60

@@ -15,6 +15,11 @@ import destinations as roster
 LOBBY = '''
 <div class="game-card" data-game="voidrun" data-href="/voidrun"><div class="game-title">Void Run</div></div>
 <div class="game-card" data-game="tower" data-href="/tower"><div class="game-title">Tower of Fortune</div></div>
+<div class="game-card" data-game="chicken" data-href="/chicken"><div class="game-title">Chicken Run</div></div>
+<div class="game-card" data-game="nations" data-href="/penalty-nations-cup"><div class="game-title">Penalty Nations Cup</div></div>
+<div class="game-card" data-game="coinpush" data-href="/coin-pusher"><div class="game-title">Dolla Money Pusher</div></div>
+<div class="game-card" data-game="balloon" data-href="/balloon"><div class="game-title">Balloon Blitz</div></div>
+<div class="game-card" data-game="ruby" data-href="/ruby"><div class="game-title">Dolla Ruby Moolah</div></div>
 <div class="game-card" data-game="slot"><div class="game-title">Wizards &amp; Alchemy</div></div>
 <div class="game-card" data-game="tower" data-href="/tower"><div class="game-title">Tower of Fortune</div></div>
 <div class="game-card" data-game="bad" data-href="https://other.example/"><div class="game-title">Bad</div></div>
@@ -29,13 +34,21 @@ class DestinationTests(unittest.TestCase):
         self.assertEqual(roster.parse_lobby(LOBBY), [
             {"slug": "voidrun", "label": "VOID Run"},
             {"slug": "tower", "label": "Tower of Fortune"},
+            {"slug": "chicken", "label": "Chicken Run"},
+            {"slug": "penalty-nations-cup", "label": "Penalty Nations Cup"},
+            {"slug": "coin-pusher", "label": "Dolla Money Pusher"},
+            {"slug": "balloon", "label": "Balloon Blitz"},
+            {"slug": "ruby", "label": "Dolla Ruby Moolah"},
             {"slug": "slots", "label": "Slots"},
         ])
 
     def test_refresh_and_fallback(self):
         with patch.object(roster, "discover_games", return_value=roster.parse_lobby(LOBBY)):
             choices = roster.destinations()
-        self.assertEqual([d["slug"] for d in choices], ["", "voidrun", "tower", "slots", "__custom__"])
+        self.assertEqual(
+            [d["slug"] for d in choices],
+            ["", "voidrun", "tower", "chicken", "penalty-nations-cup", "coin-pusher", "balloon", "ruby", "slots", "__custom__"],
+        )
         with patch.object(roster, "discover_games", side_effect=OSError("offline")):
             self.assertIn({"slug": "tower", "label": "Tower of Fortune"}, roster.destinations(force=True))
         roster._cache.update(at=0.0, games=[])
@@ -47,6 +60,11 @@ class DestinationTests(unittest.TestCase):
             client = desk.app.test_client()
             self.assertIn(b'Tower of Fortune', client.get('/api/destinations').data)
             self.assertEqual(desk._guess_destination('How Tower of Fortune works'), 'tower')
+            self.assertEqual(desk._guess_destination('Chicken road strategy'), 'chicken')
+            self.assertEqual(desk._guess_destination('Penalty Nations Cup controls'), 'penalty-nations-cup')
+            self.assertEqual(desk._guess_destination('Coin pusher tips'), 'coin-pusher')
+            self.assertEqual(desk._guess_destination('Balloon Blitz multipliers'), 'balloon')
+            self.assertEqual(desk._guess_destination('Ruby Moolah paylines'), 'ruby')
             response = client.post('/feed', data={
                 'mode': 'paste', 'title': 'A new game', 'game': '__custom__',
                 'custom_game_name': 'Moon Quest', 'custom_game_path': 'games/moon-quest',

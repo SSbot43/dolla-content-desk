@@ -86,7 +86,10 @@
       ['keno',['keno']],['limbo',['limbo']],['dice',['dice']],['hilo',['hi lo','hilo','high low']],
       ['olympus',['gods of olympus','olympus']],['inferno',['inferno vault','dollar vault inferno','inferno']],
       ['chariot',['chariot race','chariot']],['penalty',['penalty shooter']],['lucky7',['lucky 7','lucky seven']],
-      ['dond',['deal or no deal']],['balloon-blitz',['balloon blitz']],['ruby-moolah',['ruby moolah']]
+      ['dond',['deal or no deal']],['penalty-nations-cup',['penalty nations cup','nations cup']],
+      ['coin-pusher',['dolla money pusher','money pusher','coin pusher']],['balloon',['balloon blitz','balloon game']],
+      ['chicken',['chicken run','chicken road','chicken game']],['ruby',['dolla ruby moolah','ruby moolah','ruby slot']],
+      ['tower',['tower of fortune','tower']]
     ];
     for(const [slug,names] of aliases){if(!hasLiveGame(slug))continue;for(const name of names){if(text.includes(' '+name+' '))return slug}}
     return '';
