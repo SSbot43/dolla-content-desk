@@ -44,6 +44,14 @@ class GameRosterTests(unittest.TestCase):
         self.assertNotIn("['balloon-blitz',", batch)
         self.assertNotIn("['ruby-moolah',", batch)
 
+    def test_open_batch_refreshes_games_every_fifteen_minutes(self):
+        batch = (ROOT / "static" / "batch.html").read_text(encoding="utf-8")
+        app = (ROOT / "app.py").read_text(encoding="utf-8")
+        self.assertIn("DESTINATION_REFRESH_MS=15*60*1000", batch)
+        self.assertIn("setInterval(()=>loadDestinations(true),DESTINATION_REFRESH_MS)", batch)
+        self.assertIn("/api/destinations?refresh=1", batch)
+        self.assertIn('request.args.get("refresh") == "1"', app)
+
     def test_related_links_and_keyword_clusters_cover_new_games(self):
         bank = json.loads((ROOT / "seo_keywords.json").read_text(encoding="utf-8"))["clusters"]
         for slug, cluster in NEW_GAMES.items():

@@ -587,7 +587,8 @@ def ideas():
 
 @app.route("/api/destinations")
 def destination_options():
-    return jsonify(destinations())
+    force = request.args.get("refresh") == "1"
+    return jsonify(destinations(force=force))
 
 
 @app.route("/feed", methods=["GET", "POST"])
