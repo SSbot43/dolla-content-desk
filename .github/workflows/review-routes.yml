@@ -13,6 +13,7 @@ on:
       - "immediate_publish.py"
       - "bulk_launcher.py"
       - "tests/test_destinations.py"
+      - "tests/test_game_roster.py"
       - "tests/test_review_routes.py"
       - "tests/test_queue_sync.py"
       - "resilient_git.py"
@@ -29,6 +30,7 @@ on:
       - "manual_override.py"
       - "immediate_publish.py"
       - "tests/test_destinations.py"
+      - "tests/test_game_roster.py"
       - "tests/test_review_routes.py"
       - "tests/test_queue_sync.py"
       - "resilient_git.py"
@@ -46,6 +48,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install Flask
-      - run: python -m unittest discover -s tests -p test_destinations.py -v
+      - run: python -m unittest discover -s tests -p test_game_roster.py -v
       - run: python -m unittest discover -s tests -p test_review_routes.py -v
       - run: python -m unittest discover -s tests -p test_queue_sync.py -v
